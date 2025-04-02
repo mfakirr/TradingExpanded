@@ -1,4 +1,63 @@
-# TradingExpanded: Toptan Ticaret İmparatorluğu Modu Belgelendirmesi
+# Trading Expanded - Oyun Dokümantasyonu
+
+## Genel Bakış
+Trading Expanded, Mount & Blade II: Bannerlord oyununa gelişmiş ticaret özellikleri ekleyen bir moddur.
+
+## Özellikler
+
+### Toptan Satış Dükkanı
+- Her şehirde bir toptan satış dükkanı açabilirsiniz
+- Başlangıç sermayesi: 5000 Dinar
+- Şehrin refahına göre günlük kazanç
+- Sermaye yatırımı ve çekme imkanı
+
+### Menü Sistemi
+- Kolay erişilebilir şehir menüsü entegrasyonu
+- Sezgisel kullanıcı arayüzü
+- Türkçe dil desteği
+- Detaylı bilgi gösterimi
+
+## Kullanım Kılavuzu
+
+### Dükkan Açma
+1. Herhangi bir şehre girin
+2. Şehir menüsünden "Toptan Satış Dükkanı" seçeneğini seçin
+3. "Yeni Dükkan Kur" seçeneğini seçin
+4. 5000 Dinar başlangıç sermayesi ile dükkanınız açılır
+
+### Dükkan Yönetimi
+1. Şehir menüsünden "Toptan Satış Dükkanı" seçeneğini seçin
+2. "Dükkanı Yönet" seçeneğini seçin
+3. Aşağıdaki işlemleri yapabilirsiniz:
+   - Sermaye yatırımı
+   - Sermaye çekme
+   - Dükkan kapatma
+
+### İpuçları
+- Şehrin refahı yüksek olan yerlerde dükkan açmak daha karlıdır
+- Düzenli olarak sermaye yatırımı yaparak kazancınızı artırabilirsiniz
+- Birden fazla şehirde dükkan açarak riski dağıtabilirsiniz
+
+## Sıkça Sorulan Sorular
+
+### Kaç dükkan açabilirim?
+- Varsayılan olarak maksimum 3 dükkan açabilirsiniz
+
+### Dükkanımı kapatırsam sermayem ne olur?
+- Dükkanı kapattığınızda tüm sermayeniz size iade edilir
+
+### Dükkanım zarar edebilir mi?
+- Hayır, dükkanlar zarar etmez ancak şehrin refahına göre kazancınız değişir
+
+## Hata Bildirimi
+Herhangi bir hata ile karşılaşırsanız, lütfen mod sayfasından bildirimde bulunun.
+
+## Sürüm Notları
+
+### v1.1.2
+- Menü sistemi yeniden düzenlendi
+- Türkçe dil desteği eklendi
+- Hata düzeltmeleri yapıldı
 
 ## 1. Genel Bakış
 TradingExpanded, Mount & Blade II: Bannerlord için ticaret sistemini geliştiren ve oyunculara kendi ticaret imparatorluklarını kurma imkanı sağlayan bir modifikasyondur. Oyuncular toptan ticaret dükkanları açabilir, kervanlar organize edebilir ve özel ticaret ağları oluşturabilir.

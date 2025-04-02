@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+  <tags>
+    <tag language="Türkçe"/>
+  </tags>
+  <strings>
+    <!-- Menü Başlıkları -->
+    <string id="WholesaleShopMenuTitle" text="Toptan Satış Dükkanı"/>
+    <string id="WholesaleShopMenuTitleWithInfo" text="Toptan Satış Dükkanı - Sermaye: {CAPITAL}{GOLD_ICON}"/>
+    
+    <!-- Menü Seçenekleri -->
+    <string id="WholesaleShopMenuText" text="Toptan Satış Dükkanı"/>
+    <string id="WholesaleShopManageText" text="Dükkanı Yönet"/>
+    <string id="WholesaleShopEstablishText" text="Yeni Dükkan Kur (5000 Dinar)"/>
+    <string id="WholesaleShopLeaveText" text="Geri Dön"/>
+    
+    <!-- Tooltips -->
+    <string id="WholesaleShopMenuTooltip" text="Şehirdeki toptan satış dükkanınızı yönetin veya yeni bir dükkan açın."/>
+    <string id="WholesaleShopNoShop" text="Bu şehirde henüz bir dükkanınız yok."/>
+    <string id="WholesaleShopAlreadyExists" text="Bu şehirde zaten bir dükkanınız var."/>
+    <string id="WholesaleShopNotEnoughGold" text="Yeni bir dükkan kurmak için 5000 dinara ihtiyacınız var."/>
+  </strings>
+</base> 

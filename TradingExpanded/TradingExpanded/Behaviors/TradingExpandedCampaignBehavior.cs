@@ -128,6 +128,14 @@ namespace TradingExpanded.Behaviors
                 Initialize();
             }
 
+            RegisterWholesaleShopMenus(campaignGameStarter);
+        }
+        
+        /// <summary>
+        /// Toptan Satış Dükkanı ile ilgili tüm menüleri kaydeder
+        /// </summary>
+        private void RegisterWholesaleShopMenus(CampaignGameStarter campaignGameStarter)
+        {
             // Ana menüyü oluştur
             campaignGameStarter.AddGameMenu(
                 "wholesale_shop_menu", 
@@ -138,15 +146,28 @@ namespace TradingExpanded.Behaviors
                     if (shop != null)
                     {
                         args.MenuTitle = new TextObject("{=WholesaleShopMenuTitleWithInfo}Toptan Satış Dükkanı - Sermaye: {CAPITAL}{GOLD_ICON}")
-                            .SetTextVariable("CAPITAL", shop.Capital.ToString());
+                            .SetTextVariable("CAPITAL", shop.Capital);
                     }
                 }
             );
 
             // Şehir menüsüne Toptan Satış Dükkanı seçeneğini ekle
+            AddMainMenuOption(campaignGameStarter);
+
+            // Alt menü seçeneklerini ekle
+            AddManageShopOption(campaignGameStarter);
+            AddEstablishShopOption(campaignGameStarter);
+            AddLeaveMenuOption(campaignGameStarter);
+        }
+        
+        /// <summary>
+        /// Ana menüye Toptan Satış Dükkanı seçeneğini ekler
+        /// </summary>
+        private void AddMainMenuOption(CampaignGameStarter campaignGameStarter)
+        {
             campaignGameStarter.AddGameMenuOption(
-                "town",  // Şehir menüsünün ID'si
-                "wholesale_shop_option", // Bizim seçeneğimizin benzersiz ID'si
+                "town",
+                "wholesale_shop_option",
                 "{=WholesaleShopMenuText}Toptan Satış Dükkanı",
                 (MenuCallbackArgs args) =>
                 {
@@ -162,8 +183,13 @@ namespace TradingExpanded.Behaviors
                 false,
                 "{=WholesaleShopMenuTooltip}Şehirdeki toptan satış dükkanınızı yönetin veya yeni bir dükkan açın."
             );
-
-            // Toptan Satış Dükkanı menüsüne seçenekler ekle
+        }
+        
+        /// <summary>
+        /// Dükkan yönetim seçeneğini ekler
+        /// </summary>
+        private void AddManageShopOption(CampaignGameStarter campaignGameStarter)
+        {
             campaignGameStarter.AddGameMenuOption(
                 "wholesale_shop_menu",
                 "wholesale_shop_manage",
@@ -179,15 +205,23 @@ namespace TradingExpanded.Behaviors
                 (MenuCallbackArgs args) =>
                 {
                     var shop = GetShopInTown(Settlement.CurrentSettlement.Town);
-                    var viewModel = new WholesaleShopViewModel(Settlement.CurrentSettlement.Town, this, null);
+                    var viewModel = new WholesaleShopViewModel(Settlement.CurrentSettlement.Town, this, () => 
+                    {
+                        GameMenu.SwitchToMenu("wholesale_shop_menu");
+                    });
                     viewModel.ExecuteMainAction();
                 },
                 false,
                 -1,
                 false
             );
-
-            // Yeni dükkan kurma seçeneği
+        }
+        
+        /// <summary>
+        /// Yeni dükkan kurma seçeneğini ekler
+        /// </summary>
+        private void AddEstablishShopOption(CampaignGameStarter campaignGameStarter)
+        {
             campaignGameStarter.AddGameMenuOption(
                 "wholesale_shop_menu",
                 "wholesale_shop_establish",
@@ -207,15 +241,23 @@ namespace TradingExpanded.Behaviors
                 },
                 (MenuCallbackArgs args) =>
                 {
-                    var viewModel = new WholesaleShopViewModel(Settlement.CurrentSettlement.Town, this, null);
+                    var viewModel = new WholesaleShopViewModel(Settlement.CurrentSettlement.Town, this, () => 
+                    {
+                        GameMenu.SwitchToMenu("wholesale_shop_menu");
+                    });
                     viewModel.ExecuteMainAction();
                 },
                 false,
                 -1,
                 false
             );
-
-            // Geri dönüş seçeneği
+        }
+        
+        /// <summary>
+        /// Geri dönüş seçeneğini ekler
+        /// </summary>
+        private void AddLeaveMenuOption(CampaignGameStarter campaignGameStarter)
+        {
             campaignGameStarter.AddGameMenuOption(
                 "wholesale_shop_menu",
                 "wholesale_shop_leave",
