@@ -1,14 +1,15 @@
 using System;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.SaveSystem;
+using TradingExpanded.Helpers;
 
 namespace TradingExpanded.Models
 {
     /// <summary>
     /// Represents an employee working at a wholesale shop
     /// </summary>
-    [SaveableClass(Constants.SaveBaseId + 2)]
     public class WholesaleEmployee
     {
         /// <summary>
@@ -74,7 +75,7 @@ namespace TradingExpanded.Models
             Id = Constants.GenerateUniqueId();
             Name = name;
             Skill = skill;
-            SkillLevel = Math.Clamp(skillLevel, 1, 100);
+            SkillLevel = skillLevel.Clamp(1, 100);
             DailyWage = CalculateWage();
             Loyalty = 50f; // Neutral loyalty
             Character = character;
@@ -101,9 +102,9 @@ namespace TradingExpanded.Models
             {
                 // Get a random character from the town's culture
                 var cultureCharacters = town.Settlement.Culture.NotableAndWandererTemplates;
-                if (cultureCharacters.Length > 0)
+                if (cultureCharacters.Count > 0)
                 {
-                    character = cultureCharacters[random.Next(cultureCharacters.Length)];
+                    character = cultureCharacters[random.Next(cultureCharacters.Count)];
                     name = CharacterObject.PlayerCharacter.Name.ToString(); // Placeholder
                 }
                 else
@@ -173,7 +174,7 @@ namespace TradingExpanded.Models
             }
             
             // Keep loyalty within bounds
-            Loyalty = Math.Clamp(Loyalty, 0f, 100f);
+            Loyalty = Loyalty.Clamp(0f, 100f);
         }
         
         /// <summary>

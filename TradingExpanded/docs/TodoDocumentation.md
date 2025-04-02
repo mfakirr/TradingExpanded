@@ -1,115 +1,141 @@
-# TradingExpanded: Development Roadmap
+# TradingExpanded: Geliştirme Yol Haritası
 
-## 1. Basic Infrastructure Development
-1. **Project Structure Setup**
-   - Organize the mod folder structure
-   - Integrate required libraries (Harmony, ButterLib, UIExtenderEx, MCM)
-   - Create core classes
+## 1. Temel Altyapı Geliştirme
+1. **Proje Yapısı Kurulumu** ✓
+   - Mod klasör yapısını düzenle ✓
+   - Gerekli kütüphaneleri entegre et (Harmony, ButterLib, UIExtenderEx, MCM) ✓
+   - Temel sınıfları oluştur ✓
 
-2. **Create Data Models**
-   - Wholesale shop data model
-   - Caravan data model
-   - Courier data model
-   - Merchant relations data model
-   - Inventory management data model
+2. **Veri Modellerini Oluştur** ✓
+   - Toptan satış dükkanı veri modeli ✓
+   - Kervan veri modeli ✓
+   - Kurye veri modeli ✓ 
+   - Tüccar ilişkileri veri modeli ✓
+   - Envanter yönetimi veri modeli ✓
 
-## 2. User Interface Integration
-1. **Add Wholesale Shop Option to City Menu**
-   - Add a new button to the city screen
-   - Set up click event
-   - Menu transition animations
+## 2. Kullanıcı Arayüzü Entegrasyonu
+1. **Şehir Menüsüne Toptan Satış Dükkanı Seçeneği Ekle**
+   - Şehir ekranına yeni bir buton ekle
+   - Tıklama olayını ayarla
+   - Menü geçiş animasyonları
 
-2. **Develop Wholesale Shop Interface**
-   - Design the main shop screen
-   - Inventory management tab
-   - Buy/sell operations
-   - Warehouse view
+2. **Toptan Satış Dükkanı Arayüzünü Geliştir**
+   - Ana dükkan ekranını tasarla
+   - Envanter yönetimi sekmesi
+   - Alım/satım işlemleri
+   - Depo görünümü
 
-3. **Develop Caravan Management Interface**
-   - Caravan creation screen
-   - Route planning map
-   - Caravan detail panel
-   - Caravan tracking system
+3. **Kervan Yönetimi Arayüzünü Geliştir**
+   - Kervan oluşturma ekranı
+   - Rota planlama haritası
+   - Kervan detay paneli
+   - Kervan takip sistemi
 
-4. **Courier System Interface**
-   - Courier dispatch screen
-   - Price report view
-   - Courier tracking system
+4. **Kurye Sistemi Arayüzü**
+   - Kurye gönderme ekranı
+   - Fiyat raporu görünümü
+   - Kurye takip sistemi
 
-5. **Merchant Relations Interface**
-   - NPC merchant list
-   - Relationship status indicators
-   - Interaction options
+5. **Tüccar İlişkileri Arayüzü**
+   - NPC tüccar listesi
+   - İlişki durumu göstergeleri
+   - Etkileşim seçenekleri
 
-## 3. System Mechanics Development
-1. **Wholesale Shop Mechanics**
-   - Shop purchase/rent system
-   - Wholesale buy/sell price calculations
-   - Shop income/expense management
-   - Shop upgrade options
+## 3. Sistem Mekanikleri Geliştirme
+1. **Toptan Satış Dükkanı Mekanikleri** ✓
+   - Dükkan satın alma/kiralama sistemi ✓
+   - Toptan alım/satım fiyat hesaplamaları ✓
+   - Dükkan gelir/gider yönetimi ✓
+   - Dükkan yükseltme seçenekleri ✓
 
-2. **Caravan Mechanics**
-   - Caravan creation and configuration
-   - Caravan movement system
-   - Attack/defense mechanisms
-   - Profit calculations
+2. **Kervan Mekanikleri** ✓
+   - Kervan oluşturma ve yapılandırma ✓
+   - Kervan hareket sistemi ✓
+   - Saldırı/savunma mekanizmaları
+   - Kâr hesaplamaları ✓
 
-3. **Courier System Mechanics**
-   - Courier dispatch and return timing
-   - Price information gathering
-   - Courier risks and failure scenarios
+3. **Kurye Sistemi Mekanikleri** ✓
+   - Kurye gönderim ve dönüş zamanlaması ✓
+   - Fiyat bilgisi toplama ✓
+   - Kurye riskleri ve başarısızlık senaryoları
 
-4. **NPC Merchant Interaction Mechanics**
-   - Merchant relationship system
-   - Deal making mechanisms
-   - Reputation and trust system
+4. **NPC Tüccar Etkileşim Mekanikleri** ✓
+   - Tüccar ilişki sistemi ✓
+   - Anlaşma yapma mekanizmaları ✓
+   - İtibar ve güven sistemi ✓
 
-5. **Inventory and Personnel Mechanics**
-   - Inventory management system
-   - Personnel hiring and management
-   - Skill and salary systems
+5. **Envanter ve Personel Mekanikleri** ✓
+   - Envanter yönetim sistemi ✓
+   - Personel işe alma ve yönetimi ✓
+   - Beceri ve maaş sistemleri ✓
 
-6. **Automated Trade Mechanics**
-   - Route optimization algorithms
-   - Automatic buy/sell decisions
-   - Performance reporting
+6. **Otomatik Ticaret Mekanikleri**
+   - Rota optimizasyon algoritmaları ✓
+   - Otomatik alım/satım kararları
+   - Performans raporlama
 
-7. **Economic Event Mechanics**
-   - Random event triggers
-   - Market impact calculations
-   - Price fluctuation system
+7. **Ekonomik Olay Mekanikleri**
+   - Rastgele olay tetikleyicileri
+   - Pazar etki hesaplamaları
+   - Fiyat dalgalanma sistemi ✓
 
-## 4. Integration and Testing
-1. **Integrate Subsystems into Main Game**
-   - Connect mod mechanics to the main game loop
-   - Integration with existing economy system
-   - Save/load support
+## 4. Entegrasyon ve Test
+1. **Alt Sistemleri Ana Oyuna Entegre Et** ✓
+   - Mod mekaniklerini ana oyun döngüsüne bağla ✓
+   - Mevcut ekonomi sistemi ile entegrasyon ✓
+   - Kaydet/yükle desteği ✓
 
-2. **Debugging and Testing**
-   - Independent testing of each system
-   - Integration tests
-   - Performance tests
+2. **Hata Ayıklama ve Test**
+   - Her sistemin bağımsız testleri ✓
+   - Entegrasyon testleri
+   - Performans testleri
 
-3. **Balance Adjustments**
-   - Adjust price balances
-   - Fine-tune profit margins
-   - Difficulty level adjustments
+3. **Denge Ayarlamaları**
+   - Fiyat dengelerini ayarla ✓
+   - Kâr marjlarını ince ayarla ✓
+   - Zorluk seviyesi ayarlamaları
 
-## 5. Release and Documentation
-1. **Prepare Player Guide**
-   - Feature descriptions
-   - Getting started guide
-   - Tips and strategies
+## 5. Yayın ve Dokümantasyon
+1. **Oyuncu Kılavuzu Hazırla**
+   - Özellik açıklamaları
+   - Başlangıç kılavuzu
+   - İpuçları ve stratejiler
 
-2. **Package and Distribute Mod**
-   - Preparation for Nexus Mods and Steam Workshop
-   - Create version notes
+2. **Modu Paketleme ve Dağıtma**
+   - Nexus Mods ve Steam Workshop için hazırlık
+   - Sürüm notlarını oluştur
 
-## Detailed Step-by-Step Tasks
+## Detaylı Adım Adım Görevler
 
-### Phase 1: Basic Infrastructure & Data Models
-1. Create the mod's folder structure
-2. Integrate required libraries
-3. Develop core data models and data storage functionality
-4. Set up the basic interfaces for subsequent phases
-5. Implement serialization/deserialization for game save compatibility 
+### Aşama 1: Temel Altyapı ve Veri Modelleri ✓
+1. Modun klasör yapısını oluştur ✓
+2. Gerekli kütüphaneleri entegre et ✓
+3. Temel veri modellerini ve veri depolama işlevselliğini geliştir ✓
+4. Sonraki aşamalar için temel arayüzleri kur ✓
+5. Oyun kaydı uyumluluğu için serileştirme/deserileştirme işlemlerini uygula ✓
+
+### Aşama 2: Arayüz Geliştirme ve Temel Sistemler
+1. Şehir ekranına toptan satış dükkanı seçeneği ekle
+2. Toptan satış dükkanı yönetim arayüzünü oluştur
+3. Kervan oluşturma ve yönetim arayüzünü geliştir
+4. Fiyat analizi ve pazar takibi için raporlama araçları geliştir ✓
+5. NPC tüccarlarla etkileşim arayüzünü oluştur
+
+### Aşama 3: Gelişmiş Özellikler ve Mekanikler
+1. Ticaret rotaları ve optimizasyon sistemini ekle ✓
+2. Kurye mekaniklerini geliştir ✓
+3. Tüccar ilişkileri ve anlaşma mekanizmalarını uygula ✓
+4. Pazar olayları ve ekonomik dalgalanmalar sistemini ekle ✓
+5. Oyuncu dükkanları için personel ve yükseltme sistemlerini geliştir ✓
+
+### Aşama 4: Test, Optimizasyon ve Denge
+1. Tüm sistemlerin entegrasyon testlerini yap
+2. Performans optimizasyonları uygula ✓
+3. Ekonomik dengeleri ayarla
+4. Hataları düzelt ve sistemleri gözden geçir
+5. Beta sürümünü hazırla
+
+### Aşama 5: Son İşlemler ve Yayın
+1. Dokümantasyon ve yardım metinlerini tamamla
+2. Modun tam sürümünü paketleyip dağıt
+3. Topluluk geri bildirimlerine göre güncellemeler yap 

@@ -1,4 +1,7 @@
 ﻿using TaleWorlds.MountAndBlade;
+using TaleWorlds.CampaignSystem;
+using TradingExpanded.Behaviors;
+using TaleWorlds.Core;
 
 namespace Bannerlord.BUTRLoader
 {
@@ -39,6 +42,19 @@ namespace TradingExpanded
         {
             base.OnBeforeInitialModuleScreenSetAsRoot();
 
+        }
+        
+        protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
+        {
+            base.OnGameStart(game, gameStarterObject);
+            
+            if (game.GameType is Campaign)
+            {
+                if (gameStarterObject is CampaignGameStarter campaignStarter)
+                {
+                    campaignStarter.AddBehavior(new TradingExpandedCampaignBehavior());
+                }
+            }
         }
     }
 }
