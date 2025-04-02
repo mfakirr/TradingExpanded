@@ -42,7 +42,7 @@ namespace TradingExpanded.Helpers
         /// </summary>
         public static bool IsVillage(this TaleWorlds.CampaignSystem.Settlements.Town town)
         {
-            return town != null && town.IsCastle == false && town.IsVillage();
+            return town != null && !town.IsCastle && !town.IsTown;
         }
     }
 } 

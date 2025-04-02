@@ -1,4 +1,4 @@
-## Teknik Dokümantasyon - Faz 1
+## Teknik Dokümantasyon - Faz 3
 
 ### Genel Bakış
 Bu dokümantasyon, Trading Expanded modunun teknik detaylarını içerir.
@@ -48,11 +48,34 @@ campaignGameStarter.AddGameMenuOption(
 - ModuleData/Languages altında XML tabanlı çeviri dosyaları
 - Her dil için ayrı klasör
 - String ID sistemi ile kolay yönetim
+- TextObject kullanımı ile dinamik içerik
+
+```csharp
+// Çeviri örneği
+new TextObject("{=WholesaleShopNewOption}Yeni Dükkan Kur ({GOLD} Dinar)")
+    .SetTextVariable("GOLD", initialCapital)
+    .ToString()
+```
 
 #### Veri Yönetimi
 - Dictionary tabanlı veri saklama
 - Otomatik kayıt/yükleme desteği
 - Günlük ve saatlik güncelleme sistemi
+
+#### API Uyumluluk Katmanı
+
+```csharp
+// Town.Prosperity özelliğine güvenli erişim
+public static float GetTownProsperityValue(Town town, float defaultValue = 300f) 
+{
+    // Çeşitli erişim yöntemlerini dene
+    // 1. Doğrudan property erişimi
+    // 2. Üst sınıf property erişimi
+    // 3. Fief sınıfı aracılığıyla erişim
+    // 4. Method çağrısı ile erişim
+    // 5. Settlement üzerinden erişim
+}
+```
 
 ### API Kullanımı
 
@@ -68,29 +91,57 @@ public WholesaleShop GetShopInTown(Town town)
 public void CloseShop(string shopId)
 ```
 
-#### Kervan Yönetimi
+#### Ayarlar Sistemi
 ```csharp
-// Yeni kervan oluşturma
-public TradeCaravan CreateCaravan(Town startingTown, Hero leader, int initialCapital)
+// Merkezi ayarlar
+int initialCapital = Settings.Instance?.WholesaleMinimumCapital ?? 5000;
 
-// Kervan bilgisi alma
-public List<TradeCaravan> GetPlayerCaravans()
+// XML tabanlı ayar dosyası
+public class Settings 
+{
+    [XmlElement("WholesaleMinimumCapital")]
+    public int WholesaleMinimumCapital { get; set; } = 5000;
+    
+    [XmlElement("WholesaleProfitMargin")]
+    public float WholesaleProfitMargin { get; set; } = 0.15f;
+}
 ```
 
 ### Hata Yönetimi
 - Try-catch blokları ile güvenli operasyonlar
-- Detaylı loglama sistemi
-- Kullanıcı dostu hata mesajları
+- Merkezi hata loglama ve gösterme
+- Açıklayıcı kullanıcı hata mesajları
+- Otomatik para iadesi mekanizması
+
+```csharp
+// Merkezi hata loglama 
+private static void LogError(string message, Exception ex)
+{
+    string errorMessage = $"{message}: {ex.Message}";
+    
+    // Konsola log
+    if (Settings.Instance?.DebugMode ?? false)
+    {
+        Debug.Print($"TradingExpanded Error: {errorMessage}");
+        Debug.Print($"Stack Trace: {ex.StackTrace}");
+    }
+    
+    // Kullanıcıya göster
+    InformationManager.DisplayMessage(new InformationMessage(errorMessage, Colors.Red));
+}
+```
 
 ### Performans Optimizasyonları
 - Lazy loading ile gereksiz yüklemelerden kaçınma
 - Dictionary kullanımı ile hızlı erişim
 - Periyodik güncelleme sistemi
+- Exception handling optimizasyonu
 
 ### Güvenlik
 - Null kontrolleri
 - Veri doğrulama
 - Exception handling
+- Bannerlord API değişikliklerine karşı koruma
 
 ### Gelecek Geliştirmeler
 1. UI Extender entegrasyonu
@@ -99,7 +150,9 @@ public List<TradeCaravan> GetPlayerCaravans()
 4. Yeni ticaret özellikleri
 
 ### Sürüm Notları
-#### v1.1.2
-- Menü sistemi yeniden düzenlendi
-- Çeviri sistemi eklendi
-- Hata düzeltmeleri yapıldı 
+#### v1.1.3
+- Menü sistemi iyileştirildi
+- Çeviri sistemi geliştirildi
+- Bannerlord farklı sürümleri ile uyumluluk sağlandı
+- Hata yönetimi merkezi hale getirildi
+- Merkezi ayarlar sistemi geliştirildi 

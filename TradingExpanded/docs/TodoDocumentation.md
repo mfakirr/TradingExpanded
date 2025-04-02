@@ -3,10 +3,22 @@
 ## Faz 1: Temel Özellikler ✓
 - [x] Toptan Satış Dükkanı temel yapısı
 - [x] Şehir menüsü entegrasyonu
-- [x] Türkçe dil desteği
 - [x] Temel dokümantasyon
 
-## Faz 2: Gelişmiş Özellikler
+## Faz 2: Menü Sistemi ✓
+- [x] Şehir menüsüne "Toptan Satış Dükkanı" butonu ekleme
+- [x] Menü seçenekleri ekleme
+- [x] Çeviri sistemi entegrasyonu
+- [x] TextObject kullanımı
+
+## Faz 3: Dükkan Kurma ve Yönetimi ✓
+- [x] Para miktarını merkezi ayarlar üzerinden yönetme
+- [x] API uyumluluk katmanı oluşturma
+- [x] Hata yönetimi ve güvenli property erişimi
+- [x] Otomatik para iadesi
+- [x] Dükkan kurma ve yönetme temel işlevselliği
+
+## Faz 4: Gelişmiş Ticaret Özellikleri
 - [ ] Kervan sistemi
   - [ ] Kervan oluşturma
   - [ ] Rota belirleme
@@ -23,7 +35,7 @@
   - [ ] Ticaret anlaşmaları
   - [ ] Özel teklifler
 
-## Faz 3: İyileştirmeler ve Optimizasyonlar
+## Faz 5: İyileştirmeler ve Optimizasyonlar
 - [ ] UI/UX geliştirmeleri
   - [ ] Daha modern arayüz
   - [ ] Grafiksel istatistikler
@@ -34,12 +46,12 @@
   - [ ] Bellek kullanımı optimizasyonu
   - [ ] İşlem hızı artırımı
   
-- [ ] Hata düzeltmeleri
+- [ ] Hata düzeltmeleri ve stabilite
   - [ ] Bilinen hataların giderilmesi
   - [ ] Stabilite iyileştirmeleri
   - [ ] Uyumluluk sorunlarının çözümü
 
-## Faz 4: Yeni Özellikler
+## Faz 6: Yeni Özellikler
 - [ ] Ekonomi simülasyonu
   - [ ] Pazar dalgalanmaları
   - [ ] Ekonomik olaylar
@@ -55,24 +67,25 @@
   - [ ] Ticaret birlikleri
   - [ ] Politik etkiler
 
-## Faz 5: Genişletme ve Entegrasyon
+## Faz 7: Genişletme ve Entegrasyon
 - [ ] Mod entegrasyonları
   - [ ] Popüler modlarla uyumluluk
   - [ ] API desteği
-  - [ ] Genişletme noktaları
+  - [ ] UI Extender entegrasyonu
   
-- [ ] Çoklu dil desteği
+- [ ] Çoklu dil desteği genişletme
   - [ ] Yeni diller ekleme
   - [ ] Çeviri araçları
   - [ ] Topluluk çevirileri
   
 - [ ] Topluluk özellikleri
-  - [ ] Mod yapılandırması
+  - [ ] Mod yapılandırması arayüzü
   - [ ] Özelleştirme seçenekleri
-  - [ ] Kullanıcı geribildirimi
+  - [ ] Kullanıcı geribildirimi mekanizması
 
-## Notlar
-- Öncelik sırası: Faz 2 > Faz 3 > Faz 4 > Faz 5
-- Her faz için ayrı bir sürüm planlanacak
-- Topluluk geri bildirimleri dikkate alınacak
-- Performans ve stabilite her zaman öncelikli 
+## Notlar ve Öneriler
+- Faz 4 için kervan sistemini önceliklendirmeliyiz
+- Prosperity API değişikliklerini takip etmeliyiz
+- Performans ve stabilite her zaman öncelikli
+- Kullanıcı deneyimi için daha çok bilgilendirme mesajı eklemeliyiz
+- Yeni sürüm duyurularında değişiklik listesi detaylı olmalı 

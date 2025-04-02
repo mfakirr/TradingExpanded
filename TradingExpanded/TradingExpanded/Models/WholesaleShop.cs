@@ -540,8 +540,9 @@ namespace TradingExpanded.Models
                 baseExpenses = (int)(baseExpenses * 0.7f);
             }
             
-            // Şehir refahı bakım maliyetini etkiler
-            float prosperityFactor = 1f + (TradingExpanded.UI.Patches.SettlementMenuPatch.GetTownProsperityValue(Town) / 10000f);
+            // Şehir refahı bakım maliyetini etkiler - Town.Prosperity yerine güvenli metodu kullan
+            float prosperity = SettlementMenuPatch.GetTownProsperityValue(Town);
+            float prosperityFactor = 1f + (prosperity / 10000f);
             int expenses = (int)(baseExpenses * prosperityFactor);
             
             // Her çalışan ek bakım maliyeti ekler

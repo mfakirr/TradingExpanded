@@ -27,6 +27,7 @@ using TradingExpanded.Models;
 using TradingExpanded.Behaviors;
 using TradingExpanded.UI.ViewModels;
 using HarmonyLib;
+using Debug = TaleWorlds.Library.Debug;
 
 namespace TradingExpanded.UI.Patches
 {
@@ -717,48 +718,50 @@ namespace TradingExpanded.UI.Patches
                     // Dükkan bilgilerini göster seçeneği
                     options.Add(new InquiryElement(
                         1,
-                        "Dükkan Bilgileri",
+                        "{=WholesaleShopInfoOption}Dükkan Bilgileri",
                         null,
                         true,
-                        "Toptan satış dükkanınızın bilgilerini görüntüler."
+                        "{=WholesaleShopInfoDesc}Toptan satış dükkanınızın bilgilerini görüntüler."
                     ));
                     
                     // Sermaye yatır seçeneği
                     options.Add(new InquiryElement(
                         2,
-                        "Sermaye Yatır",
+                        "{=WholesaleShopInvestOption}Sermaye Yatır",
                         null,
                         true,
-                        "Dükkanınıza sermaye yatırarak daha fazla kazanç elde edin."
+                        "{=WholesaleShopInvestDesc}Dükkanınıza sermaye yatırarak daha fazla kazanç elde edin."
                     ));
                     
                     // Sermaye çek seçeneği
                     options.Add(new InquiryElement(
                         3,
-                        "Sermaye Çek",
+                        "{=WholesaleShopWithdrawOption}Sermaye Çek",
                         null,
                         true,
-                        "Dükkanınızın sermayesinden para çekin."
+                        "{=WholesaleShopWithdrawDesc}Dükkanınızın sermayesinden para çekin."
                     ));
                     
                     // Dükkanı kapat seçeneği
                     options.Add(new InquiryElement(
                         4,
-                        "Dükkanı Kapat",
+                        "{=WholesaleShopCloseOption}Dükkanı Kapat",
                         null,
                         true,
-                        "Dükkanınızı kapatıp sermayenizi geri alın."
+                        "{=WholesaleShopCloseDesc}Dükkanınızı kapatıp sermayenizi geri alın."
                     ));
                     
                     // Menüyü göster
                     MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
-                        "Toptan Satış Dükkanı Yönetimi",
-                        $"{town.Name} şehrindeki dükkanınızı yönetin.",
+                        "{=WholesaleShopManageTitle}Toptan Satış Dükkanı Yönetimi",
+                        new TextObject("{=WholesaleShopManageDesc}{TOWN} şehrindeki dükkanınızı yönetin.")
+                            .SetTextVariable("TOWN", town.Name)
+                            .ToString(),
                         options,
                         true,
                         1,  // Maksimum seçilebilecek seçenek sayısı
-                        "Seç",
-                        "İptal",
+                        "{=WholesaleShopSelect}Seç",
+                        "{=WholesaleShopCancel}İptal",
                         (List<InquiryElement> selectedOptions) =>
                         {
                             if (selectedOptions.Count > 0)
@@ -772,25 +775,34 @@ namespace TradingExpanded.UI.Patches
                 }
                 else
                 {
+                    // Ayarlardan başlangıç sermayesini al
+                    int initialCapital = Settings.Instance?.WholesaleMinimumCapital ?? 5000;
+                    
                     // Yeni dükkan açma seçeneği
                     List<InquiryElement> options = new List<InquiryElement>();
                     
                     options.Add(new InquiryElement(
                         1,
-                        "Yeni Dükkan Kur (1000 Dinar)",
+                        new TextObject("{=WholesaleShopNewOption}Yeni Dükkan Kur ({GOLD} Dinar)")
+                            .SetTextVariable("GOLD", initialCapital)
+                            .ToString(),
                         null,
                         true,
-                        "Bu şehirde yeni bir toptan satış dükkanı kurun (1000 Dinar gerekir)."
+                        new TextObject("{=WholesaleShopNewDesc}Bu şehirde yeni bir toptan satış dükkanı kurun ({GOLD} Dinar gerekir).")
+                            .SetTextVariable("GOLD", initialCapital)
+                            .ToString()
                     ));
                     
                     MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
-                        "Toptan Satış Dükkanı Kur",
-                        $"{town.Name} şehrinde yeni bir toptan satış dükkanı kurmak ister misiniz?",
+                        "{=WholesaleShopCreateTitle}Toptan Satış Dükkanı Kur",
+                        new TextObject("{=WholesaleShopCreateDesc}{TOWN} şehrinde yeni bir toptan satış dükkanı kurmak ister misiniz?")
+                            .SetTextVariable("TOWN", town.Name)
+                            .ToString(),
                         options,
                         true,
                         1,
-                        "Seç",
-                        "İptal",
+                        "{=WholesaleShopSelect}Seç",
+                        "{=WholesaleShopCancel}İptal",
                         (List<InquiryElement> selectedOptions) =>
                         {
                             if (selectedOptions.Count > 0)
@@ -804,8 +816,7 @@ namespace TradingExpanded.UI.Patches
             }
             catch (Exception ex)
             {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"Menü gösterilirken hata: {ex.Message}", Colors.Red));
+                LogError("Menü gösterilirken hata", ex);
             }
         }
         
@@ -889,29 +900,38 @@ namespace TradingExpanded.UI.Patches
                 if (_campaignBehavior.GetShopInTown(town) != null)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "Bu şehirde zaten bir dükkanınız var.", Colors.Red));
+                        "{=WholesaleShopAlreadyExists}Bu şehirde zaten bir dükkanınız var.", Colors.Red));
                     return;
                 }
+                
+                // Ayarlardan başlangıç sermayesini al
+                int initialCapital = Settings.Instance?.WholesaleMinimumCapital ?? 5000;
                 
                 // Oyuncunun parasını kontrol et
                 int playerGold = Hero.MainHero.Gold;
                 
-                if (playerGold < 1000)
+                if (playerGold < initialCapital)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "Yeni bir dükkan açmak için yeterli paranız yok. En az 1000 Dinar gerekiyor.", Colors.Red));
+                        new TextObject("{=WholesaleShopNotEnoughGold}Yeni bir dükkan açmak için yeterli paranız yok. En az {GOLD} Dinar gerekiyor.")
+                            .SetTextVariable("GOLD", initialCapital)
+                            .ToString(), 
+                        Colors.Red));
                     return;
                 }
                 
                 // Onay sor
                 InformationManager.ShowInquiry(
                     new InquiryData(
-                        "Yeni Dükkan Aç",
-                        $"{town.Name} şehrinde 1000 Dinar sermaye ile yeni bir toptan satış dükkanı açmak istiyor musunuz?",
+                        "{=WholesaleShopNewShopTitle}Yeni Dükkan Aç",
+                        new TextObject("{=WholesaleShopNewShopQuestion}{TOWN} şehrinde {GOLD} Dinar sermaye ile yeni bir toptan satış dükkanı açmak istiyor musunuz?")
+                            .SetTextVariable("TOWN", town.Name)
+                            .SetTextVariable("GOLD", initialCapital)
+                            .ToString(),
                         true,
                         true,
-                        "Evet, Aç",
-                        "Hayır, Vazgeç",
+                        "{=WholesaleShopNewShopConfirm}Evet, Aç",
+                        "{=WholesaleShopNewShopCancel}Hayır, Vazgeç",
                         () => ConfirmOpenNewShop(town),
                         null
                     )
@@ -919,7 +939,7 @@ namespace TradingExpanded.UI.Patches
             }
             catch (Exception ex)
             {
-                InformationManager.DisplayMessage(new InformationMessage($"Dükkan açma sırasında hata: {ex.Message}"));
+                LogError("Dükkan açma sırasında hata", ex);
             }
         }
         
@@ -930,30 +950,46 @@ namespace TradingExpanded.UI.Patches
         {
             try
             {
+                // Ayarlardan başlangıç sermayesini al
+                int initialCapital = Settings.Instance?.WholesaleMinimumCapital ?? 5000;
+                
                 // Oyuncunun parasını kontrol et
                 int playerGold = Hero.MainHero.Gold;
                 
-                if (playerGold < 1000)
+                if (playerGold < initialCapital)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "Yeni bir dükkan açmak için yeterli paranız yok. En az 1000 Dinar gerekiyor.", Colors.Red));
+                        new TextObject("{=WholesaleShopNotEnoughGold}Yeni bir dükkan açmak için yeterli paranız yok. En az {GOLD} Dinar gerekiyor.")
+                            .SetTextVariable("GOLD", initialCapital)
+                            .ToString(), 
+                        Colors.Red));
                     return;
                 }
                 
-                // ViewModel oluştur
-                WholesaleShopViewModel viewModel = new WholesaleShopViewModel(
-                    town, 
-                    _campaignBehavior,
-                    null);
-                    
-                // Dükkanı aç
-                viewModel.ExecuteMainAction();
-                
                 // Oyuncudan parayı al
-                Hero.MainHero.ChangeHeroGold(-1000);
+                Hero.MainHero.ChangeHeroGold(-initialCapital);
                 
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"Tebrikler! {town.Name} şehrinde yeni bir toptan satış dükkanı açtınız. Başlangıç sermayesi: 1000 Dinar", Colors.Green));
+                // Dükkanı oluştur
+                WholesaleShop shop = _campaignBehavior.CreateShop(town, initialCapital);
+                
+                if (shop != null)
+                {
+                    // Başarılı bildirim
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "{=WholesaleShopCreated}Toptancı dükkanınız kurulmuştur.", Colors.Green));
+                        
+                    // Menü butonunu yeniden çizdirmek için _buttonAdded değişkenini sıfırla
+                    // böylece RefreshValues çağrıldığında buton güncellenecek
+                    _buttonAdded = false;
+                }
+                else
+                {
+                    // Başarısız ise parayı geri ver
+                    Hero.MainHero.ChangeHeroGold(initialCapital);
+                    
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "{=WholesaleShopFailed}Dükkan oluşturulamadı.", Colors.Red));
+                }
             }
             catch (MissingMethodException ex)
             {
@@ -961,20 +997,58 @@ namespace TradingExpanded.UI.Patches
                 if (ex.Message.Contains("Prosperity"))
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "Oyunun bu sürümünde Prosperity özelliğine erişilemedi. Mod güncel Bannerlord sürümüyle uyumlu değil.", 
+                        "{=WholesaleShopProsperityError}Oyunun bu sürümünde Prosperity özelliğine erişilemedi. Mod güncel Bannerlord sürümüyle uyumlu değil.", 
                         Colors.Red));
                 }
                 else
                 {
                     // Diğer metot hatalarında
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"Metot bulunamadı hatası: {ex.Message}", Colors.Red));
+                    LogError("Metot bulunamadı hatası", ex);
                 }
+                
+                // Parayı geri ver
+                RefundShopCapital();
             }
             catch (Exception ex)
             {
-                InformationManager.DisplayMessage(new InformationMessage($"Dükkan açma sırasında hata: {ex.Message}"));
+                LogError("Dükkan açma sırasında hata", ex);
+                
+                // Parayı geri ver
+                RefundShopCapital();
             }
+        }
+        
+        /// <summary>
+        /// Dükkan sermayesini iade eder (hata durumunda)
+        /// </summary>
+        private static void RefundShopCapital()
+        {
+            int refundAmount = Settings.Instance?.WholesaleMinimumCapital ?? 5000;
+            Hero.MainHero.ChangeHeroGold(refundAmount);
+            
+            InformationManager.DisplayMessage(new InformationMessage(
+                new TextObject("{=WholesaleShopRefund}Dükkan kurma başarısız oldu. {GOLD} Dinar iade edildi.")
+                    .SetTextVariable("GOLD", refundAmount)
+                    .ToString(), 
+                Colors.Green));
+        }
+        
+        /// <summary>
+        /// Hata log mesajı gösterir ve kullanıcıya bildirim yapar
+        /// </summary>
+        private static void LogError(string message, Exception ex)
+        {
+            string errorMessage = $"{message}: {ex.Message}";
+            
+            // Konsola log
+            if (Settings.Instance?.DebugMode ?? false)
+            {
+                Debug.Print($"TradingExpanded Error: {errorMessage}");
+                Debug.Print($"Stack Trace: {ex.StackTrace}");
+            }
+            
+            // Kullanıcıya göster
+            InformationManager.DisplayMessage(new InformationMessage(errorMessage, Colors.Red));
         }
         
         /// <summary>
@@ -991,35 +1065,46 @@ namespace TradingExpanded.UI.Patches
                 
             try
             {
-                // 1. Doğrudan özellik kullanmayı dene (Bannerlord 1.2.9 API)
-                try
-                {
-                    return town.Prosperity;
-                }
-                catch
-                {
-                    // Direkt erişim başarısız oldu, diğer yöntemleri dene
-                }
+                // Sırasıyla erişim yöntemlerini dene
                 
-                // 2. Reflection ile özelliğe erişmeyi dene
+                // 1. Reflection ile özelliğe erişmeyi dene
                 PropertyInfo propertyInfo = town.GetType().GetProperty("Prosperity");
                 if (propertyInfo != null)
                 {
                     object value = propertyInfo.GetValue(town);
-                    if (value != null && value is float)
+                    if (value != null && (value is float || value is int))
                     {
-                        return (float)value;
+                        return Convert.ToSingle(value);
                     }
                 }
                 
-                // 3. Fief sınıfındaki özelliğe erişmeyi dene (Inheritance yapısında değişiklik olabilir)
+                // 2. Fief sınıfındaki özelliğe erişmeyi dene (Inheritance yapısında değişiklik olabilir)
                 propertyInfo = town.GetType().BaseType?.GetProperty("Prosperity");
                 if (propertyInfo != null)
                 {
                     object value = propertyInfo.GetValue(town);
-                    if (value != null && value is float)
+                    if (value != null && (value is float || value is int))
                     {
-                        return (float)value;
+                        return Convert.ToSingle(value);
+                    }
+                }
+                
+                // 3. Fief sınıfını doğrudan bulmayı dene
+                Type fiefType = typeof(Town).Assembly.GetType("TaleWorlds.CampaignSystem.Settlements.Fief");
+                if (fiefType != null)
+                {
+                    // Town nesnesi Fief'e dönüştürülebilir mi kontrol et
+                    if (fiefType.IsAssignableFrom(town.GetType()))
+                    {
+                        propertyInfo = fiefType.GetProperty("Prosperity");
+                        if (propertyInfo != null)
+                        {
+                            object value = propertyInfo.GetValue(town);
+                            if (value != null && (value is float || value is int))
+                            {
+                                return Convert.ToSingle(value);
+                            }
+                        }
                     }
                 }
                 
@@ -1028,15 +1113,12 @@ namespace TradingExpanded.UI.Patches
                              town.GetType().GetMethod("CalculateProsperity") ??
                              town.GetType().BaseType?.GetMethod("GetProsperity");
                              
-                if (method != null && method.ReturnType == typeof(float) || method.ReturnType == typeof(int))
+                if (method != null && (method.ReturnType == typeof(float) || method.ReturnType == typeof(int)))
                 {
                     object result = method.Invoke(town, null);
                     if (result != null)
                     {
-                        if (result is float floatValue)
-                            return floatValue;
-                        else if (result is int intValue)
-                            return (float)intValue;
+                        return Convert.ToSingle(result);
                     }
                 }
                 
@@ -1045,21 +1127,27 @@ namespace TradingExpanded.UI.Patches
                 if (propertyInfo != null)
                 {
                     object value = propertyInfo.GetValue(town.Settlement);
-                    if (value != null && value is float)
+                    if (value != null && (value is float || value is int))
                     {
-                        return (float)value;
+                        return Convert.ToSingle(value);
                     }
                 }
                 
-                // Hiçbir yöntem çalışmadı, varsayılan değeri döndür
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "Şehrin refah seviyesine erişilemedi, varsayılan değer kullanılıyor.", Colors.Yellow));
+                // Hiçbir yöntem çalışmadı, sessizce varsayılan değeri döndür
+                if (Settings.Instance?.DebugMode ?? false)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "{=WholesaleShopProsperityDefault}Şehrin refah seviyesine erişilemedi, varsayılan değer kullanılıyor.", 
+                        Colors.Yellow));
+                }
                 return defaultValue;
             }
             catch (Exception ex)
             {
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"Prosperity değeri alınırken hata: {ex.Message}", Colors.Red));
+                if (Settings.Instance?.DebugMode ?? false)
+                {
+                    LogError("Prosperity değeri alınırken hata", ex);
+                }
                 return defaultValue;
             }
         }

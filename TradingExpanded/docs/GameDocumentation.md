@@ -7,15 +7,23 @@ Trading Expanded, Mount & Blade II: Bannerlord oyununa gelişmiş ticaret özell
 
 ### Toptan Satış Dükkanı
 - Her şehirde bir toptan satış dükkanı açabilirsiniz
-- Başlangıç sermayesi: 5000 Dinar
+- Başlangıç sermayesi: 5000 Dinar (ayarlardan değiştirilebilir)
 - Şehrin refahına göre günlük kazanç
 - Sermaye yatırımı ve çekme imkanı
+- Farklı Bannerlord sürümleriyle uyumlu
 
 ### Menü Sistemi
 - Kolay erişilebilir şehir menüsü entegrasyonu
 - Sezgisel kullanıcı arayüzü
 - Türkçe dil desteği
 - Detaylı bilgi gösterimi
+- Çevrilebilir metinler
+
+### Güvenlik Sistemleri
+- Hata durumunda otomatik para iadesi
+- Bannerlord API değişikliklerine karşı koruma
+- Kullanıcı dostu hata mesajları
+- API uyumluluk katmanı
 
 ## Kullanım Kılavuzu
 
@@ -23,25 +31,59 @@ Trading Expanded, Mount & Blade II: Bannerlord oyununa gelişmiş ticaret özell
 1. Herhangi bir şehre girin
 2. Şehir menüsünden "Toptan Satış Dükkanı" seçeneğini seçin
 3. "Yeni Dükkan Kur" seçeneğini seçin
-4. 5000 Dinar başlangıç sermayesi ile dükkanınız açılır
+4. Başlangıç sermayesi ile dükkanınız açılır
+5. Açılışta hata olursa paranız otomatik olarak iade edilir
 
 ### Dükkan Yönetimi
 1. Şehir menüsünden "Toptan Satış Dükkanı" seçeneğini seçin
 2. "Dükkanı Yönet" seçeneğini seçin
 3. Aşağıdaki işlemleri yapabilirsiniz:
+   - Dükkan bilgilerini görüntüleme
    - Sermaye yatırımı
    - Sermaye çekme
    - Dükkan kapatma
+
+### Hatalar ve Çözümleri
+
+#### "Metot bulunamadı: Prosperity" Hatası
+Bu hata, Bannerlord'un yeni sürümlerinde API değişikliği nedeniyle oluşabilir. Mod bunu otomatik olarak algılayıp güvenli bir şekilde çalışacaktır. Herhangi bir işlem yapmanız gerekmez.
+
+#### Dükkan Kurma Hatası
+Dükkan kurarken hata oluşursa, yatırılan sermaye otomatik olarak iade edilir ve size bilgi mesajı gösterilir.
 
 ### İpuçları
 - Şehrin refahı yüksek olan yerlerde dükkan açmak daha karlıdır
 - Düzenli olarak sermaye yatırımı yaparak kazancınızı artırabilirsiniz
 - Birden fazla şehirde dükkan açarak riski dağıtabilirsiniz
+- Debug modunu açarak hata ayıklama yapabilirsiniz (geliştiriciler için)
+
+## Ayarlar
+
+Mod ayarlarını `Modules/TradingExpanded/Config/TradingExpandedSettings.xml` dosyasından değiştirebilirsiniz:
+
+```xml
+<Settings>
+  <IsEnabled>true</IsEnabled>
+  <DebugMode>false</DebugMode>
+  <WholesaleMinimumCapital>5000</WholesaleMinimumCapital>
+  <WholesaleProfitMargin>0.15</WholesaleProfitMargin>
+  <WholesaleMaxCapital>100000</WholesaleMaxCapital>
+  <MaxWholesaleShops>3</MaxWholesaleShops>
+</Settings>
+```
+
+### Ayar Parametreleri
+
+- **WholesaleMinimumCapital**: Dükkan kurma maliyeti ve başlangıç sermayesi
+- **WholesaleProfitMargin**: Kâr marjı
+- **WholesaleMaxCapital**: Maksimum sermaye limiti
+- **MaxWholesaleShops**: Açılabilecek maksimum dükkan sayısı
+- **DebugMode**: Hata ayıklama modu (geliştiriciler için)
 
 ## Sıkça Sorulan Sorular
 
 ### Kaç dükkan açabilirim?
-- Varsayılan olarak maksimum 3 dükkan açabilirsiniz
+- Varsayılan olarak maksimum 3 dükkan açabilirsiniz. Bu değer ayar dosyasından değiştirilebilir.
 
 ### Dükkanımı kapatırsam sermayem ne olur?
 - Dükkanı kapattığınızda tüm sermayeniz size iade edilir
@@ -49,15 +91,42 @@ Trading Expanded, Mount & Blade II: Bannerlord oyununa gelişmiş ticaret özell
 ### Dükkanım zarar edebilir mi?
 - Hayır, dükkanlar zarar etmez ancak şehrin refahına göre kazancınız değişir
 
+### Mod güncellendiğinde verilerim kaybolur mu?
+- Hayır, mod güncellense bile dükkan verileriniz korunacaktır
+
+### Bannerlord'un farklı sürümleri ile uyumlu mu?
+- Evet, mod Bannerlord'un farklı sürümleri ile çalışacak şekilde tasarlanmıştır
+
+## Çeviri Desteği
+
+Mod için kendi dilinizde çeviri eklemek için:
+
+1. `ModuleData/Languages` klasörü altında kendi diliniz için bir klasör oluşturun (örn. `DE` - Almanca için)
+2. `std_TradingExpanded_xx.xml` dosyasını oluşturun (xx: dil kodu)
+3. Aşağıdaki formatta çevirileri ekleyin:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+  <strings>
+    <string id="WholesaleShopMenuTitle" text="Toptan Satış Dükkanı" />
+    <string id="WholesaleShopNewOption" text="Yeni Dükkan Kur ({GOLD} Dinar)" />
+    <!-- Diğer çeviriler -->
+  </strings>
+</base>
+```
+
 ## Hata Bildirimi
 Herhangi bir hata ile karşılaşırsanız, lütfen mod sayfasından bildirimde bulunun.
 
 ## Sürüm Notları
 
-### v1.1.2
-- Menü sistemi yeniden düzenlendi
-- Türkçe dil desteği eklendi
-- Hata düzeltmeleri yapıldı
+### v1.1.3
+- Menü sistemi iyileştirildi
+- Çeviri sistemi geliştirildi 
+- Bannerlord farklı sürümleri ile uyumluluk sağlandı
+- Hata yönetimi merkezi hale getirildi
+- Merkezi ayarlar sistemi geliştirildi
 
 ## 1. Genel Bakış
 TradingExpanded, Mount & Blade II: Bannerlord için ticaret sistemini geliştiren ve oyunculara kendi ticaret imparatorluklarını kurma imkanı sağlayan bir modifikasyondur. Oyuncular toptan ticaret dükkanları açabilir, kervanlar organize edebilir ve özel ticaret ağları oluşturabilir.
