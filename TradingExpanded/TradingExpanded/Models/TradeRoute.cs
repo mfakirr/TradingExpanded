@@ -4,6 +4,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.SaveSystem;
 using TradingExpanded.Helpers;
+using TradingExpanded.UI.Patches;
 
 namespace TradingExpanded.Models
 {
@@ -36,28 +37,28 @@ namespace TradingExpanded.Models
         /// <summary>
         /// The total length of the route in days
         /// </summary>
-        public int TotalLength
+        public int TotalLength => CalculateTotalRouteLength();
+        
+        /// <summary>
+        /// Toplam rota uzunluğunu hesaplar
+        /// </summary>
+        private int CalculateTotalRouteLength()
         {
-            get
+            if (Waypoints.Count <= 1)
+                return 0;
+                
+            // Sıralı noktalar arasındaki yolculuk sürelerinin toplamını hesapla
+            var routeLength = Waypoints
+                .Zip(Waypoints.Skip(1), (origin, destination) => CalculateTravelTime(origin, destination))
+                .Sum();
+                
+            // Döngüsel rotalar için dönüş yolculuğunu ekle
+            if (IsCircular && Waypoints.Count > 1)
             {
-                if (Waypoints.Count <= 1)
-                    return 0;
-                    
-                int length = 0;
-                
-                for (int i = 0; i < Waypoints.Count - 1; i++)
-                {
-                    length += CalculateTravelTime(Waypoints[i], Waypoints[i + 1]);
-                }
-                
-                // Add return journey for circular routes
-                if (IsCircular && Waypoints.Count > 1)
-                {
-                    length += CalculateTravelTime(Waypoints.Last(), Waypoints.First());
-                }
-                
-                return length;
+                routeLength += CalculateTravelTime(Waypoints.Last(), Waypoints.First());
             }
+            
+            return routeLength;
         }
         
         /// <summary>
@@ -89,9 +90,9 @@ namespace TradingExpanded.Models
         /// <summary>
         /// Creates a new trade route with the given name
         /// </summary>
-        public TradeRoute(string name, bool isCircular = true)
+        public TradeRoute(string name, bool isCircular = false)
         {
-            Id = Constants.GenerateUniqueId();
+            Id = IdGenerator.GenerateUniqueId();
             Name = name;
             Waypoints = new List<Town>();
             IsCircular = isCircular;
@@ -212,7 +213,7 @@ namespace TradingExpanded.Models
             int baseProfit = Waypoints.Count * 500; // Base profit per town
             
             // Add bonus for prosperity
-            int prosperityBonus = Waypoints.Sum(town => (int)(town.Prosperity / 20));
+            int prosperityBonus = Waypoints.Sum(town => (int)(TradingExpanded.UI.Patches.SettlementMenuPatch.GetTownProsperityValue(town) / 20));
             
             // Longer routes have diminishing returns due to maintenance costs
             float lengthPenalty = 1.0f - (0.05f * (Waypoints.Count - 2));

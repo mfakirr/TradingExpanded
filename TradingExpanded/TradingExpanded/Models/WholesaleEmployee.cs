@@ -17,6 +17,7 @@ namespace TradingExpanded.Models
         /// </summary>
         public enum EmployeeSkill
         {
+            None,
             Management,
             Sales,
             Accounting,
@@ -65,14 +66,21 @@ namespace TradingExpanded.Models
         /// <summary>
         /// Default constructor for saving/loading
         /// </summary>
-        public WholesaleEmployee() { }
+        public WholesaleEmployee()
+        {
+            Id = IdGenerator.GenerateUniqueId();
+            Name = string.Empty;
+            Character = null;
+            Skill = EmployeeSkill.None;
+            SkillLevel = 0;
+        }
         
         /// <summary>
         /// Creates a new employee with the given parameters
         /// </summary>
         public WholesaleEmployee(string name, EmployeeSkill skill, int skillLevel, CharacterObject character = null)
         {
-            Id = Constants.GenerateUniqueId();
+            Id = IdGenerator.GenerateUniqueId();
             Name = name;
             Skill = skill;
             SkillLevel = skillLevel.Clamp(1, 100);

@@ -21,7 +21,7 @@ namespace TradingExpanded.Models
         public Dictionary<ItemObject, ItemStats> ItemStatistics { get; private set; }
         
         [SaveableProperty(3)]
-        public Dictionary<Town, Dictionary<ItemObject, PriceHistory>> PriceHistory { get; private set; }
+        public Dictionary<Town, Dictionary<ItemObject, PriceHistory>> PriceHistory { get; set; }
         
         [SaveableProperty(4)]
         public bool IsEnabled { get; set; }
@@ -34,7 +34,7 @@ namespace TradingExpanded.Models
         /// </summary>
         public InventoryTracker()
         {
-            Id = Constants.GenerateUniqueId();
+            Id = IdGenerator.GenerateUniqueId();
             ItemStatistics = new Dictionary<ItemObject, ItemStats>();
             PriceHistory = new Dictionary<Town, Dictionary<ItemObject, PriceHistory>>();
             IsEnabled = true;
@@ -153,31 +153,20 @@ namespace TradingExpanded.Models
             }
             
             // Record price history
-            RecordPriceHistory(item, price, town);
+            RecordPriceHistory(item, town, price);
         }
         
         /// <summary>
-        /// Records a price point in the history
+        /// Records a price history data point for an item in a town
         /// </summary>
-        public void RecordPriceHistory(ItemObject item, int price, Town town)
+        public void RecordPriceHistory(ItemObject item, Town town, int price)
         {
-            if (!IsEnabled || item == null || town == null)
-                return;
-                
-            // Ensure PriceHistory is initialized
             if (PriceHistory == null)
             {
                 PriceHistory = new Dictionary<Town, Dictionary<ItemObject, PriceHistory>>();
             }
-                
-            // Ensure town exists in the dictionary
-            if (!PriceHistory.ContainsKey(town))
-            {
-                PriceHistory[town] = new Dictionary<ItemObject, PriceHistory>();
-            }
             
-            // Ensure item exists in the town's dictionary
-            if (PriceHistory[town] == null)
+            if (!PriceHistory.ContainsKey(town))
             {
                 PriceHistory[town] = new Dictionary<ItemObject, PriceHistory>();
             }
@@ -192,37 +181,11 @@ namespace TradingExpanded.Models
                 };
             }
             
-            // Ensure DataPoints is initialized
-            if (PriceHistory[town][item].DataPoints == null)
-            {
-                PriceHistory[town][item].DataPoints = new List<PriceDataPoint>();
-            }
-            
-            // Add the new data point
             PriceHistory[town][item].DataPoints.Add(new PriceDataPoint
             {
                 Date = CampaignTime.Now,
                 Price = price
             });
-            
-            // Trim old data points if necessary
-            TrimPriceHistory(town, item);
-        }
-        
-        /// <summary>
-        /// Removes price history data points older than MaxPriceHistoryDays
-        /// </summary>
-        private void TrimPriceHistory(Town town, ItemObject item)
-        {
-            if (PriceHistory == null || !PriceHistory.ContainsKey(town) || 
-                PriceHistory[town] == null || !PriceHistory[town].ContainsKey(item) ||
-                PriceHistory[town][item] == null || PriceHistory[town][item].DataPoints == null)
-                return;
-                
-            var history = PriceHistory[town][item];
-            var cutoffDate = CampaignTime.Now.AddDays(-MaxPriceHistoryDays);
-            
-            history.DataPoints.RemoveAll(dp => dp.Date < cutoffDate);
         }
         
         /// <summary>
@@ -233,22 +196,23 @@ namespace TradingExpanded.Models
             if (item == null || buyTown == null || sellTown == null || PriceHistory == null)
                 return 0f;
                 
-            if (!PriceHistory.ContainsKey(buyTown) || PriceHistory[buyTown] == null || 
-                !PriceHistory[buyTown].ContainsKey(item) || PriceHistory[buyTown][item] == null ||
-                !PriceHistory.ContainsKey(sellTown) || PriceHistory[sellTown] == null || 
-                !PriceHistory[sellTown].ContainsKey(item) || PriceHistory[sellTown][item] == null ||
-                PriceHistory[buyTown][item].DataPoints == null || PriceHistory[buyTown][item].DataPoints.Count == 0 ||
-                PriceHistory[sellTown][item].DataPoints == null || PriceHistory[sellTown][item].DataPoints.Count == 0)
-            {
+            if (!PriceHistory.ContainsKey(buyTown) || !PriceHistory.ContainsKey(sellTown))
                 return 0f;
-            }
+                
+            var buyHistory = PriceHistory[buyTown];
+            var sellHistory = PriceHistory[sellTown];
             
-            float buyPrice = PriceHistory[buyTown][item].GetAveragePrice(7);
-            float sellPrice = PriceHistory[sellTown][item].GetAveragePrice(7);
+            if (!buyHistory.ContainsKey(item) || !sellHistory.ContainsKey(item))
+                return 0f;
+                
+            // Get average buy and sell prices over the last 7 days
+            float buyPrice = buyHistory[item].GetAveragePrice(7);
+            float sellPrice = sellHistory[item].GetAveragePrice(7);
             
             if (buyPrice <= 0)
                 return 0f;
                 
+            // Calculate profit margin as a percentage
             return (sellPrice - buyPrice) / buyPrice * 100f;
         }
         
@@ -306,22 +270,27 @@ namespace TradingExpanded.Models
         }
         
         /// <summary>
-        /// Updates the tracker by trimming old price history data
+        /// Updates the inventory tracker
         /// </summary>
         public void Update()
         {
-            if (!IsEnabled)
+            if (!IsEnabled || PriceHistory == null)
                 return;
                 
-            // This could be an expensive operation, so we don't want to run it too often
-            // In a real implementation, you'd probably want to run this less frequently
-            
-            // Trim price history for all towns and items
-            foreach (var townPair in PriceHistory)
+            // Trim old data points from price history
+            foreach (var townEntry in PriceHistory)
             {
-                foreach (var itemPair in townPair.Value)
+                foreach (var itemEntry in townEntry.Value)
                 {
-                    TrimPriceHistory(townPair.Key, itemPair.Key);
+                    var dataPoints = itemEntry.Value.DataPoints;
+                    if (dataPoints == null || dataPoints.Count == 0)
+                        continue;
+                        
+                    // Keep only the last 30 days of price data
+                    var cutoff = CampaignTime.Now.AddDays(-30);
+                    var newDataPoints = dataPoints.Where(dp => dp.Date >= cutoff).ToList();
+                    
+                    itemEntry.Value.DataPoints = newDataPoints;
                 }
             }
         }

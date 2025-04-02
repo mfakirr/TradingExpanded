@@ -18,10 +18,17 @@ namespace TradingExpanded.Helpers
         
         // Temel sabitler
         public const int BaseShopMaintenanceCost = 500;
-        
+    }
+    
+    /// <summary>
+    /// ID oluşturma işlemleri için yardımcı sınıf
+    /// </summary>
+    public static class IdGenerator
+    {
         /// <summary>
         /// Benzersiz ID oluşturur
         /// </summary>
+        /// <returns>Benzersiz GUID değeri</returns>
         public static string GenerateUniqueId()
         {
             return Guid.NewGuid().ToString();

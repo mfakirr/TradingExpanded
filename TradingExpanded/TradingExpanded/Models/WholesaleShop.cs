@@ -9,6 +9,7 @@ using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using TaleWorlds.SaveSystem;
 using TradingExpanded.Helpers;
+using TradingExpanded.UI.Patches;
 
 namespace TradingExpanded.Models
 {
@@ -165,7 +166,7 @@ namespace TradingExpanded.Models
             if (town == null)
                 throw new ArgumentNullException(nameof(town));
                 
-            Id = Constants.GenerateUniqueId();
+            Id = IdGenerator.GenerateUniqueId();
             Town = town;
             Capital = initialCapital;
             IsActive = true;
@@ -540,7 +541,7 @@ namespace TradingExpanded.Models
             }
             
             // Şehir refahı bakım maliyetini etkiler
-            float prosperityFactor = 1f + (Town.Prosperity / 10000f);
+            float prosperityFactor = 1f + (TradingExpanded.UI.Patches.SettlementMenuPatch.GetTownProsperityValue(Town) / 10000f);
             int expenses = (int)(baseExpenses * prosperityFactor);
             
             // Her çalışan ek bakım maliyeti ekler
@@ -659,7 +660,7 @@ namespace TradingExpanded.Models
                 return 0;
                 
             // Şehir pazarında bulunabilecek miktar
-            float prosperity = Town.Prosperity;
+            float prosperity = SettlementMenuPatch.GetTownProsperityValue(Town);
             int baseAvailability = (int)(prosperity / 1000);
             
             // Şehrin üretim ürünleri için daha fazla bulunabilirlik
@@ -688,7 +689,7 @@ namespace TradingExpanded.Models
             int baseVolume = (int)(Capital * 0.2f);
             
             // Şehir refahına göre ayarlama
-            float prosperityFactor = Town.Prosperity / 5000f;
+            float prosperityFactor = SettlementMenuPatch.GetTownProsperityValue(Town) / 5000f;
             baseVolume = (int)(baseVolume * prosperityFactor);
             
             // Günlük hacim (minimum 100)

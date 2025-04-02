@@ -187,7 +187,7 @@ namespace TradingExpanded.Models
         {
             get
             {
-                if (State == CourierState.Delivered || State == CourierState.Lost || ExpectedReturnTime == null)
+                if (State == CourierState.Delivered || State == CourierState.Lost)
                     return 0f;
                 
                 var hoursLeft = ExpectedReturnTime.ToHours - CampaignTime.Now.ToHours;

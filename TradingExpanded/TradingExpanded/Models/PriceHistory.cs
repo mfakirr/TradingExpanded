@@ -36,6 +36,12 @@ namespace TradingExpanded.Models
         /// </summary>
         public float GetAveragePrice(int lastNDays)
         {
+            if (DataPoints == null)
+            {
+                DataPoints = new List<PriceDataPoint>();
+                return 0f;
+            }
+            
             if (DataPoints.Count == 0)
                 return 0f;
                 

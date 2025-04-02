@@ -2,14 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using TaleWorlds.SaveSystem;
 using TradingExpanded.Models;
 using TradingExpanded.Helpers;
+using TradingExpanded.Repositories;
+using TradingExpanded.Services;
+using TradingExpanded.UI.ViewModels;
+using TradingExpanded.Utils;
 
 namespace TradingExpanded.Behaviors
 {
@@ -18,7 +24,16 @@ namespace TradingExpanded.Behaviors
     /// </summary>
     public class TradingExpandedCampaignBehavior : CampaignBehaviorBase
     {
-        // Main business objects
+        // Repositories
+        private IRepository<WholesaleShop> _shopRepository;
+        private IRepository<TradeCaravan> _caravanRepository;
+        private IRepository<Courier> _courierRepository;
+        
+        // Services
+        private IInventoryTrackerService _inventoryTrackerService;
+        private readonly ITradingExpandedServiceProvider _serviceProvider;
+        
+        // Legacy collections - bunları daha sonra tamamen repository'lere taşımak gerekecek
         private Dictionary<string, WholesaleShop> _wholesaleShops;
         private Dictionary<string, TradeCaravan> _caravans;
         private Dictionary<string, Courier> _couriers;
@@ -28,6 +43,40 @@ namespace TradingExpanded.Behaviors
         // Flags
         private bool _isInitialized;
         
+        /// <summary>
+        /// Constructor - dependency injection ile
+        /// </summary>
+        public TradingExpandedCampaignBehavior(ITradingExpandedServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            
+            // Servisleri al
+            if (_serviceProvider.HasService<IRepository<WholesaleShop>>())
+                _shopRepository = _serviceProvider.GetService<IRepository<WholesaleShop>>();
+            
+            if (_serviceProvider.HasService<IRepository<TradeCaravan>>())
+                _caravanRepository = _serviceProvider.GetService<IRepository<TradeCaravan>>();
+            
+            if (_serviceProvider.HasService<IRepository<Courier>>())
+                _courierRepository = _serviceProvider.GetService<IRepository<Courier>>();
+            
+            if (_serviceProvider.HasService<IInventoryTrackerService>())
+                _inventoryTrackerService = _serviceProvider.GetService<IInventoryTrackerService>();
+            
+            // Eski koleksiyonları oluştur (geçiş süreci için)
+            _wholesaleShops = new Dictionary<string, WholesaleShop>();
+            _caravans = new Dictionary<string, TradeCaravan>();
+            _couriers = new Dictionary<string, Courier>();
+            _merchantRelations = new Dictionary<string, MerchantRelation>();
+            _inventoryTracker = new InventoryTracker();
+            _isInitialized = false;
+            
+            LogManager.Instance.WriteDebug("TradingExpandedCampaignBehavior oluşturuldu");
+        }
+        
+        /// <summary>
+        /// Legacy constructor (save/load uyumluluğu için)
+        /// </summary>
         public TradingExpandedCampaignBehavior()
         {
             _wholesaleShops = new Dictionary<string, WholesaleShop>();
@@ -36,6 +85,8 @@ namespace TradingExpanded.Behaviors
             _merchantRelations = new Dictionary<string, MerchantRelation>();
             _inventoryTracker = new InventoryTracker();
             _isInitialized = false;
+            
+            LogManager.Instance.WriteDebug("TradingExpandedCampaignBehavior oluşturuldu (legacy constructor)");
         }
         
         #region CampaignBehaviorBase Implementation
@@ -52,17 +103,17 @@ namespace TradingExpanded.Behaviors
         
         public override void SyncData(IDataStore dataStore)
         {
-            dataStore.SyncData("TradingExpanded.WholesaleShops", ref _wholesaleShops);
-            dataStore.SyncData("TradingExpanded.Caravans", ref _caravans);
-            dataStore.SyncData("TradingExpanded.Couriers", ref _couriers);
-            dataStore.SyncData("TradingExpanded.MerchantRelations", ref _merchantRelations);
-            dataStore.SyncData("TradingExpanded.InventoryTracker", ref _inventoryTracker);
-            dataStore.SyncData("TradingExpanded.IsInitialized", ref _isInitialized);
-            
-            // Initialize if needed (first time loading the mod)
-            if (!_isInitialized && dataStore.IsLoading)
+            try
             {
-                Initialize();
+                dataStore.SyncData("_wholesaleShops", ref _wholesaleShops);
+                dataStore.SyncData("_caravans", ref _caravans);
+                dataStore.SyncData("_couriers", ref _couriers);
+                dataStore.SyncData("_merchantRelations", ref _merchantRelations);
+                dataStore.SyncData("_inventoryTracker", ref _inventoryTracker);
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("SyncData sırasında hata oluştu", ex);
             }
         }
         
@@ -76,39 +127,174 @@ namespace TradingExpanded.Behaviors
             {
                 Initialize();
             }
+
+            // Ana menüyü oluştur
+            campaignGameStarter.AddGameMenu(
+                "wholesale_shop_menu", 
+                "{=WholesaleShopMenuTitle}Toptan Satış Dükkanı", 
+                (MenuCallbackArgs args) => 
+                {
+                    var shop = GetShopInTown(Settlement.CurrentSettlement.Town);
+                    if (shop != null)
+                    {
+                        args.MenuTitle = new TextObject("{=WholesaleShopMenuTitleWithInfo}Toptan Satış Dükkanı - Sermaye: {CAPITAL}{GOLD_ICON}")
+                            .SetTextVariable("CAPITAL", shop.Capital.ToString());
+                    }
+                }
+            );
+
+            // Şehir menüsüne Toptan Satış Dükkanı seçeneğini ekle
+            campaignGameStarter.AddGameMenuOption(
+                "town",  // Şehir menüsünün ID'si
+                "wholesale_shop_option", // Bizim seçeneğimizin benzersiz ID'si
+                "{=WholesaleShopMenuText}Toptan Satış Dükkanı",
+                (MenuCallbackArgs args) =>
+                {
+                    args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
+                    return Settlement.CurrentSettlement?.IsTown ?? false;
+                },
+                (MenuCallbackArgs args) =>
+                {
+                    GameMenu.SwitchToMenu("wholesale_shop_menu");
+                },
+                false,
+                -1,
+                false,
+                "{=WholesaleShopMenuTooltip}Şehirdeki toptan satış dükkanınızı yönetin veya yeni bir dükkan açın."
+            );
+
+            // Toptan Satış Dükkanı menüsüne seçenekler ekle
+            campaignGameStarter.AddGameMenuOption(
+                "wholesale_shop_menu",
+                "wholesale_shop_manage",
+                "{=WholesaleShopManageText}Dükkanı Yönet",
+                (MenuCallbackArgs args) =>
+                {
+                    var shop = GetShopInTown(Settlement.CurrentSettlement.Town);
+                    args.IsEnabled = shop != null;
+                    if (!args.IsEnabled)
+                        args.Tooltip = new TextObject("{=WholesaleShopNoShop}Bu şehirde henüz bir dükkanınız yok.");
+                    return true;
+                },
+                (MenuCallbackArgs args) =>
+                {
+                    var shop = GetShopInTown(Settlement.CurrentSettlement.Town);
+                    var viewModel = new WholesaleShopViewModel(Settlement.CurrentSettlement.Town, this, null);
+                    viewModel.ExecuteMainAction();
+                },
+                false,
+                -1,
+                false
+            );
+
+            // Yeni dükkan kurma seçeneği
+            campaignGameStarter.AddGameMenuOption(
+                "wholesale_shop_menu",
+                "wholesale_shop_establish",
+                "{=WholesaleShopEstablishText}Yeni Dükkan Kur (5000 Dinar)",
+                (MenuCallbackArgs args) =>
+                {
+                    var shop = GetShopInTown(Settlement.CurrentSettlement.Town);
+                    args.IsEnabled = shop == null && Hero.MainHero.Gold >= 5000;
+                    if (!args.IsEnabled)
+                    {
+                        if (shop != null)
+                            args.Tooltip = new TextObject("{=WholesaleShopAlreadyExists}Bu şehirde zaten bir dükkanınız var.");
+                        else
+                            args.Tooltip = new TextObject("{=WholesaleShopNotEnoughGold}Yeni bir dükkan kurmak için 5000 dinara ihtiyacınız var.");
+                    }
+                    return true;
+                },
+                (MenuCallbackArgs args) =>
+                {
+                    var viewModel = new WholesaleShopViewModel(Settlement.CurrentSettlement.Town, this, null);
+                    viewModel.ExecuteMainAction();
+                },
+                false,
+                -1,
+                false
+            );
+
+            // Geri dönüş seçeneği
+            campaignGameStarter.AddGameMenuOption(
+                "wholesale_shop_menu",
+                "wholesale_shop_leave",
+                "{=WholesaleShopLeaveText}Geri Dön",
+                (MenuCallbackArgs args) => { return true; },
+                (MenuCallbackArgs args) => { GameMenu.SwitchToMenu("town"); },
+                true,
+                -1,
+                false
+            );
         }
         
+        /// <summary>
+        /// Oyun yüklendiğinde çalışır
+        /// </summary>
         private void OnGameLoaded(CampaignGameStarter campaignGameStarter)
         {
-            // Ensure proper initialization after loading a save
-            if (_wholesaleShops == null)
-                _wholesaleShops = new Dictionary<string, WholesaleShop>();
+            try
+            {
+                LogManager.Instance.WriteInfo("TradingExpanded: Oyun yüklendi");
                 
-            if (_caravans == null)
-                _caravans = new Dictionary<string, TradeCaravan>();
+                // Dictionary koleksiyonları oluştur
+                if (_wholesaleShops == null)
+                    _wholesaleShops = new Dictionary<string, WholesaleShop>();
                 
-            if (_couriers == null)
-                _couriers = new Dictionary<string, Courier>();
+                if (_caravans == null)
+                    _caravans = new Dictionary<string, TradeCaravan>();
                 
-            if (_merchantRelations == null)
-                _merchantRelations = new Dictionary<string, MerchantRelation>();
+                if (_couriers == null)
+                    _couriers = new Dictionary<string, Courier>();
                 
-            if (_inventoryTracker == null)
-                _inventoryTracker = new InventoryTracker();
+                if (_merchantRelations == null)
+                    _merchantRelations = new Dictionary<string, MerchantRelation>();
+                
+                if (_inventoryTracker == null)
+                    _inventoryTracker = new InventoryTracker();
+                
+                // PriceHistory null kontrolü
+                if (_inventoryTracker.PriceHistory == null)
+                    _inventoryTracker.PriceHistory = new Dictionary<Town, Dictionary<ItemObject, PriceHistory>>();
+                
+                // Başlatılmadıysa başlat
+                if (!_isInitialized)
+                {
+                    Initialize();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("OnGameLoaded sırasında hata oluştu", ex);
+            }
         }
         
         private void OnDailyTick()
         {
-            // Update all objects daily
-            UpdateWholesaleShops();
-            UpdateCaravans();
-            UpdateCouriers();
-            UpdateMerchantRelations();
-            
-            // Update analytics less frequently (every 3 days)
-            if ((int)CampaignTime.Now.ToDays % 3 == 0)
+            try
             {
-                _inventoryTracker.Update();
+                // Update all objects daily
+                UpdateWholesaleShops();
+                UpdateCaravans();
+                UpdateCouriers();
+                UpdateMerchantRelations();
+                
+                // Update analytics less frequently (every 3 days)
+                if ((int)CampaignTime.Now.ToDays % 3 == 0)
+                {
+                    if (_inventoryTrackerService != null)
+                    {
+                        _inventoryTrackerService.Update();
+                    }
+                    else
+                    {
+                        _inventoryTracker.Update();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("OnDailyTick sırasında hata oluştu", ex);
             }
         }
         
@@ -119,11 +305,25 @@ namespace TradingExpanded.Behaviors
         
         private void OnSettlementEntered(MobileParty mobileParty, Settlement settlement, Hero hero)
         {
-            // Handle player entering a settlement
-            if (mobileParty == MobileParty.MainParty && settlement.IsTown)
+            try
             {
-                // Record current prices for analytics
-                RecordCurrentPrices(settlement.Town);
+                // Handle player entering a settlement
+                if (mobileParty == MobileParty.MainParty && settlement.IsTown)
+                {
+                    // Record current prices for analytics
+                    if (_inventoryTrackerService != null)
+                    {
+                        _inventoryTrackerService.RecordCurrentPrices(settlement.Town);
+                    }
+                    else
+                    {
+                        RecordCurrentPrices(settlement.Town);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("OnSettlementEntered sırasında hata oluştu", ex);
             }
         }
         
@@ -473,40 +673,25 @@ namespace TradingExpanded.Behaviors
         }
         
         /// <summary>
-        /// Records current prices in a town for analytics
+        /// Şehirdeki mevcut fiyatları kaydeder
         /// </summary>
         public void RecordCurrentPrices(Town town)
         {
-            if (town == null || !_inventoryTracker.IsEnabled)
+            if (town == null)
                 return;
-                
-            // Get all tradeable items
-            var items = MBObjectManager.Instance.GetObjectTypeList<ItemObject>()
-                .Where(item => 
-                    item.ItemCategory != DefaultItemCategories.Horse && 
-                    item.ItemCategory != DefaultItemCategories.WarHorse &&
-                    item.ItemCategory != DefaultItemCategories.LightArmor &&
-                    item.ItemCategory != DefaultItemCategories.MediumArmor &&
-                    item.ItemCategory != DefaultItemCategories.HeavyArmor && 
-                    item.ItemCategory != DefaultItemCategories.UltraArmor &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons1 &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons2 &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons3 &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons4 &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons5 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons1 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons2 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons3 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons4 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons5);
-                    
-            foreach (var item in items)
+
+            foreach (var item in MBObjectManager.Instance.GetObjectTypeList<ItemObject>())
             {
-                // Get current price in town
-                int price = town.GetItemPrice(item);
-                
-                // Record the price
-                _inventoryTracker.RecordPriceHistory(item, price, town);
+                if (item.IsTradeGood)
+                {
+                    // Şu anki fiyatı al
+                    int price = town.GetItemPrice(item);
+                    if (price > 0)
+                    {
+                        // Record price history
+                        _inventoryTracker.RecordPriceHistory(item, town, price);
+                    }
+                }
             }
         }
         

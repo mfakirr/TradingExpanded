@@ -4,9 +4,10 @@
     <Version>0.0.1</Version>
     <TargetFrameworks>net472;net6</TargetFrameworks>
     <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <LangVersion>10.0</LangVersion>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
 
     <BuildForWindows>false</BuildForWindows>
     <BuildForWindowsStore>false</BuildForWindowsStore>
@@ -45,6 +46,9 @@
 
   <ItemGroup>
     <PackageReference Include="Bannerlord.ReferenceAssemblies.Core" Version="1.1.2.145801" />
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.Native" Version="1.1.2.145801" />
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.StoryMode" Version="1.1.2.145801" />
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.SandBox" Version="1.1.2.145801" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" PrivateAssets="all" IncludeAssets="compile" />
     <PackageReference Include="BUTR.Harmony.Analyzer" Version="1.0.1.50" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
   </ItemGroup>

@@ -16,26 +16,26 @@ namespace TradingExpanded.Helpers
         protected override void DefineClassTypes()
         {
             // Main business objects
-            AddClassDefinition(typeof(WholesaleShop), 1);
-            AddClassDefinition(typeof(WholesaleBuyOrder), 11); // Inner class
-            AddClassDefinition(typeof(WholesaleSellOrder), 12); // Inner class
+            AddClassDefinition(typeof(WholesaleShop), TradingExpandedTypeIds.WholesaleShop);
+            AddClassDefinition(typeof(WholesaleBuyOrder), TradingExpandedTypeIds.WholesaleBuyOrder);
+            AddClassDefinition(typeof(WholesaleSellOrder), TradingExpandedTypeIds.WholesaleSellOrder);
             
-            AddClassDefinition(typeof(WholesaleEmployee), 2);
-            AddClassDefinition(typeof(TradeCaravan), 3);
-            AddClassDefinition(typeof(TradeRoute), 4);
-            AddClassDefinition(typeof(Courier), 5);
-            AddClassDefinition(typeof(MerchantRelation), 6);
-            AddClassDefinition(typeof(TradeAgreement), 7);
+            AddClassDefinition(typeof(WholesaleEmployee), TradingExpandedTypeIds.WholesaleEmployee);
+            AddClassDefinition(typeof(TradeCaravan), TradingExpandedTypeIds.TradeCaravan);
+            AddClassDefinition(typeof(TradeRoute), TradingExpandedTypeIds.TradeRoute);
+            AddClassDefinition(typeof(Courier), TradingExpandedTypeIds.Courier);
+            AddClassDefinition(typeof(MerchantRelation), TradingExpandedTypeIds.MerchantRelation);
+            AddClassDefinition(typeof(TradeAgreement), TradingExpandedTypeIds.TradeAgreement);
             
             // Analytics and stats objects
-            AddClassDefinition(typeof(InventoryTracker), 8);
-            AddClassDefinition(typeof(ItemStats), 9);
-            AddClassDefinition(typeof(PriceHistory), 10);
-            AddClassDefinition(typeof(PriceDataPoint), 13);
+            AddClassDefinition(typeof(InventoryTracker), TradingExpandedTypeIds.InventoryTracker);
+            AddClassDefinition(typeof(ItemStats), TradingExpandedTypeIds.ItemStats);
+            AddClassDefinition(typeof(PriceHistory), TradingExpandedTypeIds.PriceHistory);
+            AddClassDefinition(typeof(PriceDataPoint), TradingExpandedTypeIds.PriceDataPoint);
             
             // İç sınıflar için
-            AddClassDefinition(typeof(PriceTracker.FiyatKaydi), 41);
-            AddClassDefinition(typeof(PriceTracker.IslemKaydi), 42);
+            AddClassDefinition(typeof(PriceTracker.FiyatKaydi), TradingExpandedTypeIds.PriceTrackerFiyatKaydi);
+            AddClassDefinition(typeof(PriceTracker.IslemKaydi), TradingExpandedTypeIds.PriceTrackerIslemKaydi);
         }
         
         protected override void DefineContainerDefinitions()
@@ -60,7 +60,7 @@ namespace TradingExpanded.Helpers
             ConstructContainerDefinition(typeof(List<TradeAgreement>));
             
             ConstructContainerDefinition(typeof(Dictionary<ItemObject, ItemStats>));
-            ConstructContainerDefinition(typeof(Dictionary<Town, Dictionary<ItemObject, PriceHistory>>));
+//            ConstructContainerDefinition(typeof(Dictionary<Town, Dictionary<ItemObject, PriceHistory>>));
             ConstructContainerDefinition(typeof(Dictionary<ItemObject, PriceHistory>));
             
             ConstructContainerDefinition(typeof(List<PriceDataPoint>));
