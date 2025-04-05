@@ -213,7 +213,7 @@ namespace TradingExpanded.Models
             int baseProfit = Waypoints.Count * 500; // Base profit per town
             
             // Add bonus for prosperity
-            int prosperityBonus = Waypoints.Sum(town => (int)(TradingExpanded.UI.Patches.SettlementMenuPatch.GetTownProsperityValue(town) / 20));
+            int prosperityBonus = Waypoints.Sum(town => (int)(SettlementMenuPatch.GetTownProsperityValue(town) / 20));
             
             // Longer routes have diminishing returns due to maintenance costs
             float lengthPenalty = 1.0f - (0.05f * (Waypoints.Count - 2));

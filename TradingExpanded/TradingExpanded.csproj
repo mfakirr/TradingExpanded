@@ -45,12 +45,32 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Bannerlord.ReferenceAssemblies.Core" Version="1.1.2.145801" />
-    <PackageReference Include="Bannerlord.ReferenceAssemblies.Native" Version="1.1.2.145801" />
-    <PackageReference Include="Bannerlord.ReferenceAssemblies.StoryMode" Version="1.1.2.145801" />
-    <PackageReference Include="Bannerlord.ReferenceAssemblies.SandBox" Version="1.1.2.145801" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" PrivateAssets="all" IncludeAssets="compile" />
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.Core" Version="1.2.12.66233" />
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.Native" Version="1.2.12.66233" />
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.StoryMode" Version="1.2.12.66233" />
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.SandBox" Version="1.2.12.66233" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" PrivateAssets="all" IncludeAssets="compile" />
     <PackageReference Include="BUTR.Harmony.Analyzer" Version="1.0.1.50" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Bannerlord.ButterLib" Version="2.9.18" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Bannerlord.MCM" Version="5.10.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Bannerlord.ReferenceAssemblies" Version="1.2.12.66233" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Bannerlord.UIExtenderEx" Version="2.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Lib.Harmony" Version="2.3.5" />
   </ItemGroup>
   
 </Project>

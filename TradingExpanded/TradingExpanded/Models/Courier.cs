@@ -3,419 +3,523 @@ using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
 using TaleWorlds.Library;
 using TradingExpanded.Helpers;
+using TradingExpanded.Utils;
+using TradingExpanded.Components;
 using TaleWorlds.ObjectSystem;
 
 namespace TradingExpanded.Models
 {
     /// <summary>
-    /// Uzak şehirlerden fiyat bilgisi toplayan kuryeyi temsil eder
+    /// Ticaret bilgisi toplamak için yerleşimler arasında seyahat eden kurye
     /// </summary>
     public class Courier
     {
-        #region Kurye Durumları
+        #region Temel Özellikler
+        [SaveableField(1)]
+        private Settlement _origin;
+
+        [SaveableField(2)]
+        private Settlement _destination;
+
+        [SaveableField(3)]
+        private MobileParty _mobileParty;
+
+        [SaveableField(4)]
+        private CampaignTime _creationTime;
+
+        [SaveableField(5)]
+        private bool _delivered = false;
+
+        [SaveableField(6)]
+        private bool _failed = false;
+
+        [SaveableField(7)]
+        private float _quantity;
         
-        /// <summary>
-        /// Kuryenin mevcut durumu
-        /// </summary>
-        public enum CourierState
-        {
-            /// <summary>Henüz yola çıkmamış</summary>
-            Ready,
-            
-            /// <summary>Hedef şehre gidiyor</summary>
-            Traveling,
-            
-            /// <summary>Hedef şehirde fiyat bilgisi topluyor</summary>
-            Gathering,
-            
-            /// <summary>Geri dönüyor</summary>
-            Returning,
-            
-            /// <summary>Görevi tamamladı, bilgi getirdi</summary>
-            Delivered,
-            
-            /// <summary>Kuryenin başına bir şey geldi veya kayboldu</summary>
-            Lost
-        }
+        [SaveableField(8)]
+        private string _id;
         
+        [SaveableField(9)]
+        private bool _isReturning = false;
+        
+        [SaveableField(10)]
+        private Dictionary<string, float> _collectedPrices = new Dictionary<string, float>();
+
+        public Settlement Origin => _origin;
+        public Settlement Destination => _destination;
+        public MobileParty MobileParty => _mobileParty;
+        public bool IsDelivered => _delivered;
+        public bool HasFailed => _failed;
+        public float Quantity => _quantity;
+        public bool IsReturning => _isReturning;
+        public IReadOnlyDictionary<string, float> CollectedPrices => _collectedPrices;
+        public string Id => _id;
         #endregion
         
-        #region Özellikler
-        
-        [SaveableProperty(1)]
-        public string Id { get; private set; }
-        
-        [SaveableProperty(2)]
-        public Town OriginTown { get; private set; }
-        
-        [SaveableProperty(3)]
-        public Town DestinationTown { get; private set; }
-        
-        [SaveableProperty(4)]
-        public CourierState State { get; private set; }
-        
-        [SaveableProperty(5)]
-        public CampaignTime DepartureTime { get; private set; }
-        
-        [SaveableProperty(6)]
-        public CampaignTime ExpectedReturnTime { get; private set; }
-        
-        [SaveableProperty(7)]
-        public Dictionary<ItemObject, int> PriceInfo { get; private set; }
-        
-        [SaveableProperty(8)]
-        public int CourierSkill { get; private set; }
-        
-        [SaveableProperty(9)]
-        public float JourneyProgress { get; private set; }
-        
-        [SaveableProperty(10)]
-        public bool HasReturnedInfo { get; private set; }
-        
-        [SaveableProperty(11)]
-        public int Cost { get; private set; }
-        
-        #endregion
-        
-        #region Hesaplanan Özellikler
-        
         /// <summary>
-        /// Kuryenin bulunduğu yerleşim (yolculuk durumuna bağlı)
-        /// </summary>
-        public Settlement CurrentLocation
-        {
-            get
-            {
-                switch (State)
-                {
-                    case CourierState.Ready:
-                    case CourierState.Delivered:
-                        return OriginTown.Settlement;
-                    case CourierState.Gathering:
-                        return DestinationTown.Settlement;
-                    case CourierState.Traveling:
-                        // Yolda, yarı yolda olduğunu varsayalım
-                        return null;
-                    case CourierState.Returning:
-                        // Yolda, yarı yolda olduğunu varsayalım
-                        return null;
-                    case CourierState.Lost:
-                        return null;
-                    default:
-                        return null;
-                }
-            }
-        }
-        
-        /// <summary>
-        /// Hedef şehre olan mesafe (km)
-        /// </summary>
-        public float Distance => OriginTown.Settlement.Position2D.Distance(DestinationTown.Settlement.Position2D) / 1000f;
-        
-        /// <summary>
-        /// Yolculuğun yaklaşık süresi (gün)
-        /// </summary>
-        public float TravelDuration => Distance / 20f; // Ortalama günlük seyahat hızı 20km
-        
-        /// <summary>
-        /// Bir yöne gidiş süresi (saat)
-        /// </summary>
-        public float OneWayTravelHours => TravelDuration * 24f;
-        
-        /// <summary>
-        /// Yolculuğun tamamlanma yüzdesi
-        /// </summary>
-        public float CompletionPercentage
-        {
-            get
-            {
-                switch (State)
-                {
-                    case CourierState.Ready:
-                        return 0f;
-                    case CourierState.Traveling:
-                        return JourneyProgress * 0.45f; // %0-%45 arası
-                    case CourierState.Gathering:
-                        return 45f + (JourneyProgress * 0.1f); // %45-%55 arası
-                    case CourierState.Returning:
-                        return 55f + (JourneyProgress * 0.45f); // %55-%100 arası
-                    case CourierState.Delivered:
-                    case CourierState.Lost:
-                        return 100f;
-                    default:
-                        return 0f;
-                }
-            }
-        }
-        
-        /// <summary>
-        /// Kuryenin mevcut durum açıklaması
-        /// </summary>
-        public string StatusDescription
-        {
-            get
-            {
-                switch (State)
-                {
-                    case CourierState.Ready:
-                        return "Hazır (yola çıkmamış)";
-                    case CourierState.Traveling:
-                        return $"{DestinationTown.Name}'a gidiyor (%{JourneyProgress * 100:F0})";
-                    case CourierState.Gathering:
-                        return $"{DestinationTown.Name}'da bilgi topluyor";
-                    case CourierState.Returning:
-                        return $"{OriginTown.Name}'a dönüyor (%{JourneyProgress * 100:F0})";
-                    case CourierState.Delivered:
-                        return "Görev tamamlandı, bilgiler alındı";
-                    case CourierState.Lost:
-                        return "Kurye kayboldu";
-                    default:
-                        return "Bilinmiyor";
-                }
-            }
-        }
-        
-        /// <summary>
-        /// Kalan tahmini dönüş süresi (saat)
-        /// </summary>
-        public float RemainingHours
-        {
-            get
-            {
-                if (State == CourierState.Delivered || State == CourierState.Lost)
-                    return 0f;
-                
-                var hoursLeft = ExpectedReturnTime.ToHours - CampaignTime.Now.ToHours;
-                return (float)Math.Max(0.0, hoursLeft);
-            }
-        }
-        
-        /// <summary>
-        /// Kalan tahmini dönüş süresi (gün)
-        /// </summary>
-        public float RemainingDays => RemainingHours / 24f;
-        
-        #endregion
-        
-        #region Yapılandırıcılar
-        
-        /// <summary>
-        /// Default constructor for saving/loading
+        /// Boş yapıcı - deserialization için
         /// </summary>
         public Courier()
         {
-            PriceInfo = new Dictionary<ItemObject, int>();
+            _id = Guid.NewGuid().ToString();
+            _creationTime = CampaignTime.Now;
+            _collectedPrices = new Dictionary<string, float>();
         }
         
         /// <summary>
-        /// Creates a new courier to gather information
+        /// Yeni bir kurye oluşturur
         /// </summary>
-        public Courier(Town originTown, Town destinationTown, int courierSkill = 50)
+        public Courier(Settlement origin, Settlement destination, float quantity)
         {
-            if (originTown == null || destinationTown == null)
-                throw new ArgumentNullException("Köken ve hedef şehirler belirtilmelidir.");
-                
-            Id = Guid.NewGuid().ToString();
-            OriginTown = originTown;
-            DestinationTown = destinationTown;
-            CourierSkill = courierSkill.Clamp(10, 100);
-            State = CourierState.Ready;
-            JourneyProgress = 0f;
-            HasReturnedInfo = false;
-            PriceInfo = new Dictionary<ItemObject, int>();
-            
-            // Kurye maliyetini hesapla
-            CalculateCost();
+            _origin = origin ?? throw new ArgumentNullException(nameof(origin));
+            _destination = destination ?? throw new ArgumentNullException(nameof(destination));
+            _quantity = quantity;
+            _creationTime = CampaignTime.Now;
+            _id = Guid.NewGuid().ToString();
+            _collectedPrices = new Dictionary<string, float>();
         }
         
-        #endregion
-        
-        #region Metotlar
-        
         /// <summary>
-        /// Kuryenin yolculuğa başlamasını sağlar
+        /// Haritada kurye partisini oluşturur
         /// </summary>
-        public void StartJourney()
+        public void CreatePartyOnMap()
         {
-            if (State != CourierState.Ready)
+            if (ShouldSkipPartyCreation())
                 return;
-                
-            State = CourierState.Traveling;
-            DepartureTime = CampaignTime.Now;
-            JourneyProgress = 0f;
-            
-            // Yolculuk süresini hesapla ve geri dönüş zamanını belirle
-            // Gidiş + bilgi toplama (½ gün) + dönüş
-            float totalHours = (OneWayTravelHours * 2) + 12f;
-            ExpectedReturnTime = DepartureTime.AddHours(totalHours);
-        }
-        
-        /// <summary>
-        /// Kuryenin günlük durumunu günceller
-        /// </summary>
-        public void UpdateCourier()
-        {
-            // Yalnızca aktif kuryeler için güncelleme yap
-            if (State == CourierState.Delivered || State == CourierState.Lost || State == CourierState.Ready)
-                return;
-                
-            // Kurye yolculuk süresince ilerleme
-            var elapsedHours = (CampaignTime.Now - DepartureTime).ToHours;
-            var totalExpectedHours = (ExpectedReturnTime - DepartureTime).ToHours;
-            
-            // Risk hesaplama
-            float baseRiskPerDay = 0.01f; // %1 günlük temel risk
-            float riskFactor = Settings.Instance?.CourierRiskFactor ?? 0.1f;
-            float skillProtection = CourierSkill / 100f; // Beceri yükseldikçe risk azalır
-            
-            float dailyRisk = baseRiskPerDay * riskFactor * (1f - (skillProtection * 0.8f));
-            
-            // Kurye kaybolabilir
-            if (MBRandom.RandomFloat <= dailyRisk && State != CourierState.Lost)
+
+            try
             {
-                State = CourierState.Lost;
-                HasReturnedInfo = false;
-                return;
+                var (from, to, partyName) = PreparePartyInfo();
+                
+                if (from == null || to == null)
+                {
+                    LogError("Parti oluşturulamadı: Kalkış veya hedef yerleşimi boş");
+                    _failed = true;
+                    return;
+                }
+                
+                LogInfo($"Kurye partisi oluşturuluyor: {from.Name} => {to.Name}");
+
+                _mobileParty = MobilePartyHelper.CreateNewCourierParty(from, to, Hero.MainHero, partyName);
+                
+                if (_mobileParty?.IsActive == true)
+                {
+                    ValidatePartyComponent();
+                    ShowPartyCreatedMessage(from, to);
+                }
+                else
+                {
+                    LogError("Kurye partisi oluşturulamadı veya oluşturulduktan sonra aktif değil.");
+                    _failed = true;
+                }
             }
-            
-            // Kuryenin mevcut yolculuk aşamasını güncelle
-            switch (State)
+            catch (Exception ex)
             {
-                case CourierState.Traveling:
-                    // Gidiş aşaması
-                    float travelHours = OneWayTravelHours;
-                    JourneyProgress = (float)Math.Min(1.0, elapsedHours / travelHours);
-                    
-                    // Hedef şehre vardı mı?
-                    if (JourneyProgress >= 1.0f)
-                    {
-                        State = CourierState.Gathering;
-                        JourneyProgress = 0f;
-                    }
-                    break;
-                    
-                case CourierState.Gathering:
-                    // Bilgi toplama aşaması (yaklaşık yarım gün)
-                    float gatheringHours = 12f;
-                    float gatheringStartHour = OneWayTravelHours;
-                    
-                    JourneyProgress = (float)Math.Min(1.0, (elapsedHours - gatheringStartHour) / gatheringHours);
-                    
-                    // Bilgi toplama tamamlandı mı?
-                    if (JourneyProgress >= 1.0f)
-                    {
-                        State = CourierState.Returning;
-                        JourneyProgress = 0f;
-                        
-                        // Fiyat bilgilerini topla
-                        GatherPriceInformation();
-                    }
-                    break;
-                    
-                case CourierState.Returning:
-                    // Dönüş aşaması
-                    float returnStartHour = OneWayTravelHours + 12f; // Gidiş + bilgi toplama
-                    
-                    JourneyProgress = (float)Math.Min(1.0, (elapsedHours - returnStartHour) / OneWayTravelHours);
-                    
-                    // Dönüş tamamlandı mı?
-                    if (JourneyProgress >= 1.0f)
-                    {
-                        State = CourierState.Delivered;
-                        JourneyProgress = 1.0f;
-                        HasReturnedInfo = true;
-                    }
-                    break;
+                LogError($"Kurye partisi oluşturma hatası: {ex.Message}", ex);
+                _failed = true;
             }
         }
         
         /// <summary>
-        /// Hedef şehirde fiyat bilgilerini toplar
+        /// Kuryenin teslim durumunu kontrol eder
         /// </summary>
-        private void GatherPriceInformation()
+        public void CheckDelivery()
         {
-            PriceInfo.Clear();
-            
-            // Tüm ticari eşyalar için fiyat bilgisi topla
-            var items = MBObjectManager.Instance.GetObjectTypeList<ItemObject>()
-                .Where(item => 
-                    item.ItemCategory != DefaultItemCategories.Horse && 
-                    item.ItemCategory != DefaultItemCategories.WarHorse &&
-                    item.ItemCategory != DefaultItemCategories.LightArmor &&
-                    item.ItemCategory != DefaultItemCategories.MediumArmor &&
-                    item.ItemCategory != DefaultItemCategories.HeavyArmor && 
-                    item.ItemCategory != DefaultItemCategories.UltraArmor &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons1 &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons2 &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons3 &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons4 &&
-                    item.ItemCategory != DefaultItemCategories.MeleeWeapons5 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons1 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons2 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons3 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons4 &&
-                    item.ItemCategory != DefaultItemCategories.RangedWeapons5 &&
-                    item.Value > 0);
-                    
-            foreach (var item in items)
+            if (_delivered || _failed) 
+                return;
+
+            try
             {
-                int price = DestinationTown.GetItemPrice(item);
+                if (!IsPartyActive())
+                {
+                    LogInfo("Kurye partisi artık aktif değil, başarısız olarak işaretleniyor.");
+                    MarkAsFailed();
+                    return;
+                }
                 
-                // Kurye becerisine göre fiyat bilgisi doğruluğu
-                float accuracyFactor = CourierSkill / 100f;
+                var currentTarget = _isReturning ? _origin : _destination;
                 
-                // %80-%120 arasında rastgele bir hata payı ekle, beceri arttıkça hata azalır
-                float errorRange = 0.4f * (1f - accuracyFactor);
-                float errorFactor = 1.0f + (MBRandom.RandomFloat * errorRange) - (errorRange / 2f);
+                // Yerleşime varış kontrolü
+                if (HasReachedSettlement(currentTarget))
+                    return;
                 
-                // Gerçek fiyatı beceri seviyesine göre değiştir
-                int reportedPrice = (int)(price * errorFactor);
+                // Yakınlık kontrolü
+                if (IsCloseToTarget(currentTarget))
+                    return;
                 
-                PriceInfo[item] = reportedPrice;
+                // Hedef kontrolü ve düzeltme
+                FixTargetIfNeeded(currentTarget);
+            }
+            catch (Exception ex)
+            {
+                LogError($"Teslim kontrolü sırasında hata: {ex.Message}", ex);
             }
         }
         
         /// <summary>
-        /// Kuryenin maliyetini hesaplar
+        /// Teslim durumunu günceller ve başarılı olarak işaretler
         /// </summary>
-        private void CalculateCost()
+        public void MarkAsDelivered()
         {
-            float baseCost = Settings.Instance?.CourierBaseCost ?? 100;
-            float distanceMultiplier = Settings.Instance?.CourierDistanceMultiplier ?? 0.5f;
+            _delivered = true;
+            RemoveParty();
             
-            // Temel ücret + mesafe başına ek ücret + beceri seviyesi başına ek ücret
-            Cost = (int)(baseCost + (Distance * distanceMultiplier) + (CourierSkill * 1.5f));
+            if (_collectedPrices.Count > 0)
+            {
+                UpdateTradeRumors();
+            }
+        }
+        
+        /// <summary>
+        /// Kurye görevini başarısız olarak işaretler
+        /// </summary>
+        public void MarkAsFailed()
+        {
+            _failed = true;
+            RemoveParty();
         }
         
         /// <summary>
         /// Kurye hakkında özet bilgi döndürür
         /// </summary>
-        /// <returns>Özet bilgi metni</returns>
         public string GetSummary()
         {
-            string summary = $"Kurye: {OriginTown.Name} → {DestinationTown.Name}\n";
-            summary += $"Durum: {StatusDescription}\n";
-            summary += $"Mesafe: {Distance:F1} km\n";
-            summary += $"Beceri: {CourierSkill}/100\n";
+            string status = _delivered ? "Teslim Edildi" : 
+                           _failed ? "Başarısız" : 
+                           _isReturning ? "Dönüş Yolunda" : "Gidiş Yolunda";
             
-            if (State == CourierState.Traveling || State == CourierState.Gathering || State == CourierState.Returning)
+            string summary = $"Kurye: {Origin.Name} → {Destination.Name}\n";
+            summary += $"Durum: {status}\n";
+            summary += $"Miktar: {_quantity}\n";
+            
+            if (_collectedPrices.Count > 0)
             {
-                summary += $"İlerleme: %{CompletionPercentage:F0}\n";
-                summary += $"Tahmini varış: {RemainingDays:F1} gün sonra\n";
-            }
-            else if (State == CourierState.Delivered)
-            {
-                summary += $"Getirilen fiyat bilgisi: {PriceInfo.Count} eşya\n";
+                summary += $"Toplanan Fiyat Bilgisi: {_collectedPrices.Count} ürün\n";
             }
             
             return summary;
         }
         
+        #region Yardımcı Metodlar
+        private bool ShouldSkipPartyCreation()
+        {
+            bool shouldSkip = _delivered || _failed || (_mobileParty != null && _mobileParty.IsActive);
+            
+            if (shouldSkip)
+            {
+                LogInfo($"Kurye partisi oluşturulmadı. Sebep: Teslim={_delivered}, Başarısız={_failed}, Aktif={_mobileParty != null && _mobileParty.IsActive}");
+            }
+            
+            return shouldSkip;
+        }
+        
+        private (Settlement from, Settlement to, TextObject partyName) PreparePartyInfo()
+        {
+            Settlement from = _isReturning ? _destination : _origin;
+            Settlement to = _isReturning ? _origin : _destination;
+            
+            string nameText = _isReturning 
+                ? $"Ulak - Dönüş ({from.Name} → {to.Name})"
+                : $"Ulak ({from.Name} → {to.Name})";
+                
+            TextObject partyName = new TextObject(nameText);
+            
+            return (from, to, partyName);
+        }
+        
+        private void ValidatePartyComponent()
+        {
+            if (_mobileParty.PartyComponent is CourierPartyComponent)
+            {
+                LogInfo("Parti başarıyla CourierPartyComponent kullanılarak oluşturuldu");
+            }
+            else
+            {
+                LogInfo("Parti oluşturuldu ancak CourierPartyComponent türünde değil");
+            }
+        }
+        
+        private void ShowPartyCreatedMessage(Settlement from, Settlement to)
+        {
+            string message = _isReturning 
+                ? $"{from.Name}'dan {to.Name}'a dönmekte olan ulak haritada görünür durumda."
+                : $"{from.Name}'dan {to.Name}'a giden ulak haritada görünür durumda.";
+            
+            ShowMessage(message, Colors.Green);
+        }
+        
+        private bool IsPartyActive()
+        {
+            return _mobileParty != null && _mobileParty.IsActive;
+        }
+        
+        private bool HasReachedSettlement(Settlement target)
+        {
+            if (_mobileParty.CurrentSettlement == target)
+            {
+                if (!_isReturning)
+                {
+                    LogInfo($"Kurye {_destination.Name} hedefine ulaştı, fiyat bilgileri toplanıyor ve geri dönüş başlatılıyor.");
+                    CollectPricesFromTown(_destination);
+                    StartReturnJourney();
+                }
+                else
+                {
+                    LogInfo($"Kurye {_origin.Name} kökenine geri döndü, teslim edildi olarak işaretleniyor.");
+                    MarkAsDelivered();
+                    
+                    ShowMessage($"{_destination.Name}'dan {_origin.Name}'a dönen ulak fiyat bilgileriyle başarıyla ulaştı.", Colors.Green);
+                }
+                
+                return true;
+            }
+            
+            return false;
+        }
+        
+        private bool IsCloseToTarget(Settlement target)
+        {
+            float distanceToTarget = Campaign.Current.Models.MapDistanceModel.GetDistance(_mobileParty, target);
+            
+            if (distanceToTarget <= 1.0f)
+            {
+                if (!_isReturning)
+                {
+                    LogInfo($"Kurye {_destination.Name} hedefine yakın (mesafe: {distanceToTarget}), fiyat bilgileri toplanıyor ve geri dönüş başlatılıyor.");
+                    CollectPricesFromTown(_destination);
+                    StartReturnJourney();
+                }
+                else
+                {
+                    LogInfo($"Kurye {_origin.Name} kökenine yakın (mesafe: {distanceToTarget}), teslim edildi olarak işaretleniyor.");
+                    MarkAsDelivered();
+                    
+                    ShowMessage($"{_destination.Name}'dan {_origin.Name}'a dönen ulak fiyat bilgileriyle başarıyla ulaştı.", Colors.Green);
+                }
+                
+                return true;
+            }
+            
+            return false;
+        }
+        
+        private void FixTargetIfNeeded(Settlement target)
+        {
+            if (_mobileParty.TargetSettlement != target && _mobileParty.Ai != null)
+            {
+                LogInfo("Parti hedefi kaybolmuş, yeniden ayarlanıyor...");
+                _mobileParty.Ai.SetMoveGoToSettlement(target);
+            }
+        }
+        
+        private void RemoveParty()
+        {
+            if (IsPartyActive())
+            {
+                try
+                {
+                    LogInfo("Kurye partisi kaldırılıyor...");
+                    _mobileParty.RemoveParty();
+                    LogInfo("Kurye partisi haritadan kaldırıldı.");
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Parti kaldırılırken hata oluştu: {ex.Message}", ex);
+                }
+            }
+        }
+        
+        private void CollectPricesFromTown(Settlement town)
+        {
+            try
+            {
+                _collectedPrices.Clear();
+                
+                if (town?.IsTown != true || town.Town == null)
+                {
+                    LogError($"{town?.Name} yerleşimi fiyat bilgilerini toplamak için uygun değil!");
+                    return;
+                }
+                
+                LogInfo($"{town.Name} şehrinden fiyat bilgileri toplanıyor...");
+                
+                // Sadece ticari malları ve gıda ürünlerini filtrele, sonra limit uygula
+                var itemTypes = MBObjectManager.Instance.GetObjectTypeList<ItemObject>()
+                    .Where(IsTradeGood)
+                    .Take(50);
+                
+                foreach (var item in itemTypes)
+                {
+                    float price = town.Town.GetItemPrice(item, null, false);
+                    _collectedPrices[item.StringId] = price;
+                    
+                    LogInfo($"{item.Name}: {price} denar");
+                }
+                
+                LogInfo($"Toplam {_collectedPrices.Count} ürün fiyatı toplandı.");
+            }
+            catch (Exception ex)
+            {
+                LogError($"Fiyat toplama hatası: {ex.Message}", ex);
+            }
+        }
+        
+        private bool IsTradeGood(ItemObject item)
+        {
+            if (item == null)
+                return false;
+                
+            return item.IsTradeGood;
+        }
+        
+        private void StartReturnJourney()
+        {
+            try
+            {
+                LogInfo("Geri dönüş yolculuğu başlatılıyor...");
+                
+                RemoveParty();
+                _isReturning = true;
+                CreatePartyOnMap();
+                
+                LogInfo($"Geri dönüş yolculuğu başladı: {_destination.Name} → {_origin.Name}");
+                ShowMessage($"{_destination.Name}'dan {_origin.Name}'a dönen ulak yola çıktı.", Colors.Green);
+            }
+            catch (Exception ex)
+            {
+                LogError($"Geri dönüş başlatma hatası: {ex.Message}", ex);
+                MarkAsFailed();
+            }
+        }
+        
+        private void UpdateTradeRumors()
+        {
+            try
+            {
+                LogInfo($"{_destination.Name} şehrinden toplanan fiyat bilgileri işleniyor...");
+                
+                var tradeRumors = CreateTradeRumors();
+                
+                if (tradeRumors.Count > 0)
+                {
+                    var success = AddTradeRumorsToGame(tradeRumors);
+                    
+                    if (!success)
+                    {
+                        ShowFallbackPriceInfo(tradeRumors);
+                    }
+                }
+                else
+                {
+                    LogInfo("Hiç ticari mal bulunamadı.");
+                    ShowMessage($"{_destination.Name} şehrinden ticari mal fiyatı bulunamadı.", Colors.Red);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Fiyat bilgilerini işleme hatası: {ex.Message}", ex);
+            }
+        }
+        
+        private List<TradeRumor> CreateTradeRumors()
+        {
+            var rumors = new List<TradeRumor>();
+            int count = 0;
+            
+            foreach (var priceInfo in _collectedPrices)
+            {
+                var item = MBObjectManager.Instance.GetObject<ItemObject>(priceInfo.Key);
+                
+                if (IsTradeGood(item))
+                {
+                    float buyPrice = priceInfo.Value;
+                    float sellPrice = _destination.Town.GetItemPrice(item, null, true);
+                    
+                    var rumor = new TradeRumor(
+                        _destination, 
+                        item, 
+                        (int)buyPrice, 
+                        (int)sellPrice, 
+                        10);
+                    
+                    rumors.Add(rumor);
+                    count++;
+                    
+                    LogInfo($"Ticaret duyumu oluşturuldu: {item.Name} @ {_destination.Name} - Alış: {buyPrice}, Satış: {sellPrice}");
+                }
+            }
+            
+            return rumors;
+        }
+        
+        private bool AddTradeRumorsToGame(List<TradeRumor> rumors)
+        {
+            try
+            {
+                var behavior = Campaign.Current.GetCampaignBehavior<TaleWorlds.CampaignSystem.CampaignBehaviors.TradeRumorsCampaignBehavior>();
+                
+                if (behavior != null)
+                {
+                    behavior.AddTradeRumors(rumors, _destination);
+                    
+                    ShowMessage($"{_destination.Name} şehrinden {rumors.Count} ticaret duyumu toplanıp güncellendi.", Colors.Green);
+                    LogInfo($"{rumors.Count} ticaret duyumu başarıyla eklendi.");
+                    return true;
+                }
+                
+                LogError("TradeRumorsCampaignBehavior bulunamadı.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogError($"Ticaret duyumları eklenirken hata: {ex.Message}", ex);
+                return false;
+            }
+        }
+        
+        private void ShowFallbackPriceInfo(List<TradeRumor> rumors)
+        {
+            string priceReport = $"{_destination.Name} şehrinden toplanan fiyat bilgileri:\n";
+            foreach (var rumor in rumors.Take(5))
+            {
+                priceReport += $"{rumor.ItemCategory.Name}: {GetRumorPrice(rumor)} denar\n";
+            }
+            
+            if (rumors.Count > 5)
+            {
+                priceReport += $"...ve {rumors.Count - 5} diğer ürün.";
+            }
+            
+            ShowMessage(priceReport, Colors.Green);
+        }
+        
+        private int GetRumorPrice(TradeRumor rumor)
+        {
+            try
+            {
+                var priceField = rumor.GetType().GetProperty("BuyPrice") ?? 
+                                 rumor.GetType().GetProperty("PriceWithoutTaxes");
+                
+                if (priceField != null)
+                {
+                    return (int)priceField.GetValue(rumor);
+                }
+            }
+            catch {}
+            
+            return 0;
+        }
+        
+        // Log yardımcıları
+        private void LogInfo(string message) => LogManager.Instance.WriteInfo($"[Courier] {message}");
+        private void LogError(string message, Exception ex = null) => LogManager.Instance.WriteError($"[Courier] {message}", ex);
+        private void ShowMessage(string message, Color color) => InformationManager.DisplayMessage(new InformationMessage(message, color));
         #endregion
     }
 } 

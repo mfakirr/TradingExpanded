@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Overlay;
 using TaleWorlds.Core;
@@ -751,18 +752,28 @@ namespace TradingExpanded.UI.Patches
                         "{=WholesaleShopCloseDesc}Dükkanınızı kapatıp sermayenizi geri alın."
                     ));
                     
-                    // Menüyü göster
+                    // Ulak gönder seçeneği
+                    options.Add(new InquiryElement(
+                        5,
+                        "{=CourierSendOption}Ulak Gönder",
+                        null,
+                        true,
+                        "{=CourierSendDesc}Diğer şehirlerdeki ticaret malı fiyatlarını öğrenmek için ulak gönderin."
+                    ));
+                    
+                    // İlk MultiSelectionInquiryData
                     MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
-                        "{=WholesaleShopManageTitle}Toptan Satış Dükkanı Yönetimi",
+                        "{=WholesaleShopManageTitle}Toptan Satış Dükkanı Yönetimi",          // titleText
                         new TextObject("{=WholesaleShopManageDesc}{TOWN} şehrindeki dükkanınızı yönetin.")
                             .SetTextVariable("TOWN", town.Name)
-                            .ToString(),
-                        options,
-                        true,
-                        1,  // Maksimum seçilebilecek seçenek sayısı
-                        "{=WholesaleShopSelect}Seç",
-                        "{=WholesaleShopCancel}İptal",
-                        (List<InquiryElement> selectedOptions) =>
+                            .ToString(),                                                     // descriptionText
+                        options,                                                             // inquiryElements
+                        true,                                                                // isExitShown
+                        0,                                                                   // minSelectableOptionCount
+                        1,                                                                   // maxSelectableOptionCount
+                        "{=WholesaleShopSelect}Seç",                                         // affirmativeText
+                        "{=WholesaleShopCancel}İptal",                                       // negativeText
+                        (List<InquiryElement> selectedOptions) =>                            // affirmativeAction
                         {
                             if (selectedOptions.Count > 0)
                             {
@@ -770,7 +781,9 @@ namespace TradingExpanded.UI.Patches
                                 HandleShopManagementOption(town, (int)selectedOption.Identifier);
                             }
                         },
-                        null  // cancel action
+                        null,                                                                // negativeAction
+                        "",                                                                  // soundEventPath
+                        false                                                                // isSearchAvailable
                     ));
                 }
                 else
@@ -793,24 +806,28 @@ namespace TradingExpanded.UI.Patches
                             .ToString()
                     ));
                     
+                    // İkinci MultiSelectionInquiryData kullanımı
                     MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
-                        "{=WholesaleShopCreateTitle}Toptan Satış Dükkanı Kur",
+                        "{=WholesaleShopCreateTitle}Toptan Satış Dükkanı Kur",              // titleText
                         new TextObject("{=WholesaleShopCreateDesc}{TOWN} şehrinde yeni bir toptan satış dükkanı kurmak ister misiniz?")
                             .SetTextVariable("TOWN", town.Name)
-                            .ToString(),
-                        options,
-                        true,
-                        1,
-                        "{=WholesaleShopSelect}Seç",
-                        "{=WholesaleShopCancel}İptal",
-                        (List<InquiryElement> selectedOptions) =>
+                            .ToString(),                                                     // descriptionText
+                        options,                                                             // inquiryElements
+                        true,                                                                // isExitShown
+                        0,                                                                   // minSelectableOptionCount
+                        1,                                                                   // maxSelectableOptionCount
+                        "{=WholesaleShopSelect}Seç",                                         // affirmativeText
+                        "{=WholesaleShopCancel}İptal",                                       // negativeText
+                        (List<InquiryElement> selectedOptions) =>                            // affirmativeAction
                         {
                             if (selectedOptions.Count > 0)
                             {
                                 OpenNewShop(town);
                             }
                         },
-                        null
+                        null,                                                                // negativeAction
+                        "",                                                                  // soundEventPath
+                        false                                                                // isSearchAvailable
                     ));
                 }
             }
@@ -846,6 +863,10 @@ namespace TradingExpanded.UI.Patches
                     case 4: // Dükkanı Kapat
                         InformationManager.DisplayMessage(new InformationMessage(
                             "Dükkan kapatma işlemi için WholesaleShopViewModel kullanılmalıdır.", Colors.Yellow));
+                        break;
+                        
+                    case 5: // Ulak Gönder
+                        ShowSendCourier(town);
                         break;
                         
                     default:
@@ -920,20 +941,22 @@ namespace TradingExpanded.UI.Patches
                     return;
                 }
                 
-                // Onay sor
+                // İlk InquiryData
                 InformationManager.ShowInquiry(
                     new InquiryData(
-                        "{=WholesaleShopNewShopTitle}Yeni Dükkan Aç",
+                        "{=WholesaleShopNewShopTitle}Yeni Dükkan Aç",                        // titleText
                         new TextObject("{=WholesaleShopNewShopQuestion}{TOWN} şehrinde {GOLD} Dinar sermaye ile yeni bir toptan satış dükkanı açmak istiyor musunuz?")
                             .SetTextVariable("TOWN", town.Name)
                             .SetTextVariable("GOLD", initialCapital)
-                            .ToString(),
-                        true,
-                        true,
-                        "{=WholesaleShopNewShopConfirm}Evet, Aç",
-                        "{=WholesaleShopNewShopCancel}Hayır, Vazgeç",
-                        () => ConfirmOpenNewShop(town),
-                        null
+                            .ToString(),                                                     // descriptionText
+                        true,                                                                // isAffirmativeOptionShown
+                        true,                                                                // isNegativeOptionShown
+                        "{=WholesaleShopNewShopConfirm}Evet, Aç",                           // affirmativeText
+                        "{=WholesaleShopNewShopCancel}Hayır, Vazgeç",                       // negativeText
+                        () => ConfirmOpenNewShop(town),                                      // onAffirmativeClicked
+                        null,                                                                // onNegativeClicked
+                        "",                                                                  // soundEventPath
+                        0f                                                                   // waitTime
                     )
                 );
             }
@@ -1149,6 +1172,258 @@ namespace TradingExpanded.UI.Patches
                     LogError("Prosperity değeri alınırken hata", ex);
                 }
                 return defaultValue;
+            }
+        }
+        
+        /// <summary>
+        /// Ulak gönderme ekranını gösterir
+        /// </summary>
+        public static void ShowSendCourier(Town originTown)
+        {
+            try
+            {
+                // Oyuncunun dükkanını kontrol et
+                var shop = _campaignBehavior.GetShopInTown(originTown);
+                if (shop == null)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "Bu şehirde bir dükkanınız yok.", Colors.Red));
+                    return;
+                }
+                
+                // Eğer ulak oluşturma sistemi hazır değilse
+                if (!_campaignBehavior.IsCourierSystemReady())
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "Ulak sistemi henüz hazır değil.", Colors.Red));
+                    return;
+                }
+                
+                // Ulak limiti kontrolü
+                int maxCouriers = Settings.Instance?.MaxCouriers ?? 5;
+                int currentCouriers = _campaignBehavior.GetActiveCourierCount();
+                
+                if (currentCouriers >= maxCouriers)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TextObject("{=CourierLimitReached}Maksimum ulak sayısına ({MAX_COURIERS}) ulaştınız. Yeni ulak göndermek için mevcut ulaklardan birinin görevini tamamlaması gerekiyor.")
+                            .SetTextVariable("MAX_COURIERS", maxCouriers)
+                            .ToString(),
+                        Colors.Red));
+                    return;
+                }
+                
+                // Gönderilecek şehir listesini hazırla
+                List<InquiryElement> townOptions = new List<InquiryElement>();
+                
+                // Şehirleri mesafelerine göre sırala
+                var towns = Town.AllTowns
+                    .Where(t => t != originTown) // Şu anki şehri hariç tut
+                    .OrderBy(t => Campaign.Current.Models.MapDistanceModel.GetDistance(originTown.Settlement, t.Settlement))
+                    .ToList();
+                
+                foreach (Town town in towns)
+                {
+                    // Şehirler arası mesafeyi hesapla
+                    float distance = Campaign.Current.Models.MapDistanceModel.GetDistance(originTown.Settlement, town.Settlement);
+                    
+                    // Ulak maliyetini hesapla
+                    int cost = CalculateCourierCost(originTown, town);
+                    
+                    // Maliyet için yeterli altın var mı kontrol et
+                    bool canAfford = Hero.MainHero.Gold >= cost;
+                    
+                    // Şehir bilgilerini ve maliyeti gösteren metin
+                    string optionText = new TextObject("{=CourierDestinationOption}{TOWN_NAME} - {DISTANCE}km ({COST} Dinar)")
+                        .SetTextVariable("TOWN_NAME", town.Name)
+                        .SetTextVariable("DISTANCE", ((int)distance).ToString())
+                        .SetTextVariable("COST", cost.ToString())
+                        .ToString();
+                    
+                    // Şehir hakkında açıklama
+                    string hintText = new TextObject("{=CourierDestinationDesc}{TOWN_NAME} şehrine ulak göndermek {COST} Dinar. Bu şehirdeki ticaret malı fiyatlarını öğrenebilirsiniz.")
+                        .SetTextVariable("TOWN_NAME", town.Name)
+                        .SetTextVariable("COST", cost.ToString())
+                        .ToString();
+                    
+                    // Seçeneği listeye ekle
+                    townOptions.Add(new InquiryElement(
+                        town.StringId,       // Tanımlayıcı olarak şehir ID'si
+                        optionText,          // Gösterilecek metin
+                        null,                // İkon (null = ikon yok)
+                        canAfford,           // Seçilebilir mi? (yeterli para yoksa seçilemez)
+                        hintText             // İpucu metni
+                    ));
+                }
+                
+                // Başlık metni
+                string titleText = new TextObject("{=CourierSendTitle}Ulak Gönder").ToString();
+                
+                // Açıklama metni
+                string descriptionText = new TextObject("{=CourierSendDesc}{ORIGIN_TOWN} şehrinden hangi şehire ulak göndermek istiyorsunuz?")
+                    .SetTextVariable("ORIGIN_TOWN", originTown.Name)
+                    .ToString();
+                
+                // Onay butonu metni
+                string affirmativeText = new TextObject("{=CourierSendConfirm}Gönder").ToString();
+                
+                // İptal butonu metni
+                string negativeText = new TextObject("{=CourierSendCancel}İptal").ToString();
+                
+                // Ulak gönderme ekranını göster
+                MBInformationManager.ShowMultiSelectionInquiry(
+                    new MultiSelectionInquiryData(
+                        titleText,           // Başlık
+                        descriptionText,     // Açıklama
+                        townOptions,         // Şehir seçenekleri
+                        true,                // Çıkış butonu göster
+                        0,                   // Minimum seçilebilir seçenek sayısı
+                        1,                   // Maksimum seçilebilir seçenek sayısı
+                        affirmativeText,     // Onay butonu metni
+                        negativeText,        // İptal butonu metni
+                        OnCourierDestinationSelected, // Seçim yapıldığında çağrılacak metod
+                        null,                // İptal edildiğinde çağrılacak metod (null = bir şey yapma)
+                        "",                  // Ses efekti
+                        false                // Arama özelliği
+                    )
+                );
+            }
+            catch (Exception ex)
+            {
+                LogError("Ulak gönderme ekranı gösterilirken hata", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Ulak gönderilecek şehir seçildiğinde çağrılır
+        /// </summary>
+        private static void OnCourierDestinationSelected(List<InquiryElement> selectedOptions)
+        {
+            try
+            {
+                // Eğer hiçbir şehir seçilmediyse işlem yapma
+                if (selectedOptions == null || selectedOptions.Count == 0)
+                    return;
+                
+                // Seçilen şehir ID'sini al
+                string selectedTownId = selectedOptions[0].Identifier as string;
+                if (string.IsNullOrEmpty(selectedTownId))
+                    return;
+                
+                // Şehir ID'sine göre şehri bul
+                Town destinationTown = Town.AllTowns.FirstOrDefault(t => t.StringId == selectedTownId);
+                if (destinationTown == null)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "Seçilen şehir bulunamadı.", Colors.Red));
+                    return;
+                }
+                
+                // Şu anki şehri al
+                Town originTown = Settlement.CurrentSettlement?.Town;
+                if (originTown == null)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "Şu anki şehir bilgisi alınamadı.", Colors.Red));
+                    return;
+                }
+                
+                // Ulak maliyetini hesapla
+                int cost = CalculateCourierCost(originTown, destinationTown);
+                
+                // Onay sorgusu göster
+                InformationManager.ShowInquiry(
+                    new InquiryData(
+                        new TextObject("{=CourierConfirmTitle}Ulak Gönder").ToString(),                              // Başlık
+                        new TextObject("{=CourierConfirmQuestion}{DESTINATION_TOWN} şehrine {COST} Dinar karşılığında ulak göndermek istiyor musunuz?")
+                            .SetTextVariable("DESTINATION_TOWN", destinationTown.Name)
+                            .SetTextVariable("COST", cost)
+                            .ToString(),                                                                             // Açıklama
+                        true,                                                                                        // Onay butonu göster
+                        true,                                                                                        // İptal butonu göster
+                        new TextObject("{=CourierConfirmYes}Evet, Gönder").ToString(),                              // Onay butonu metni
+                        new TextObject("{=CourierConfirmNo}Hayır, Vazgeç").ToString(),                              // İptal butonu metni
+                        () => ConfirmSendCourier(originTown, destinationTown, cost),                                 // Onaylandığında çağrılacak metod
+                        null,                                                                                        // İptal edildiğinde çağrılacak metod
+                        "",                                                                                          // Ses efekti
+                        0f                                                                                           // Bekleme süresi
+                    )
+                );
+            }
+            catch (Exception ex)
+            {
+                LogError("Ulak gönderilecek şehir seçilirken hata", ex);
+            }
+        }
+        
+        /// <summary>
+        /// İki şehir arasındaki ulak gönderme maliyetini hesaplar
+        /// </summary>
+        private static int CalculateCourierCost(Town originTown, Town destinationTown)
+        {
+            try
+            {
+                // Ayarlardan temel maliyet ve mesafe çarpanını al
+                int baseCost = Settings.Instance?.CourierBaseCost ?? 100;
+                float distanceMultiplier = Settings.Instance?.CourierDistanceMultiplier ?? 0.5f;
+                
+                // Şehirler arası mesafeyi hesapla
+                float distance = Campaign.Current.Models.MapDistanceModel.GetDistance(originTown.Settlement, destinationTown.Settlement);
+                
+                // Toplam maliyeti hesapla: Temel Maliyet + (Mesafe * Çarpan)
+                int cost = baseCost + (int)(distance * distanceMultiplier);
+                
+                return Math.Max(cost, 1); // En az 1 Dinar
+            }
+            catch (Exception ex)
+            {
+                LogError("Ulak maliyeti hesaplanırken hata", ex);
+                return 500; // Hata durumunda varsayılan değer
+            }
+        }
+        
+        /// <summary>
+        /// Ulak gönderme işlemini onaylar ve gerçekleştirir
+        /// </summary>
+        private static void ConfirmSendCourier(Town originTown, Town destinationTown, int cost)
+        {
+            try
+            {
+                // Parayı oyuncudan al
+                GiveGoldAction.ApplyForCharacterToSettlement(Hero.MainHero, originTown.Settlement, cost);
+                
+                // Ulak oluştur ve gönder
+                bool success = _campaignBehavior.CreateAndSendCourier(originTown, destinationTown, cost);
+                
+                if (success)
+                {
+                    // Hesaplanan varış süresi
+                    CampaignTime arrivalTime = _campaignBehavior.CalculateCourierArrivalTime(originTown, destinationTown);
+                    int days = (int)arrivalTime.ToHours / 24;
+                    
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TextObject("{=CourierSentSuccess}{DESTINATION_TOWN} şehrine ulaşması yaklaşık {DAYS} gün sürecek bir ulak gönderildi.")
+                            .SetTextVariable("DESTINATION_TOWN", destinationTown.Name)
+                            .SetTextVariable("DAYS", days)
+                            .ToString(),
+                        Colors.Green));
+                }
+                else
+                {
+                    // Hata durumunda para iadesi
+                    GiveGoldAction.ApplyForSettlementToCharacter(originTown.Settlement, Hero.MainHero, cost, true);
+                    
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "{=CourierSendFailed}Ulak gönderme işlemi başarısız oldu. Paranız iade edildi.",
+                        Colors.Red));
+                }
+            }
+            catch (Exception ex)
+            {
+                // Hata durumunda para iadesi
+                GiveGoldAction.ApplyForSettlementToCharacter(originTown.Settlement, Hero.MainHero, cost, true);
+                
+                LogError("Ulak gönderme onaylanırken hata", ex);
             }
         }
     }

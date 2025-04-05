@@ -73,6 +73,9 @@ namespace TradingExpanded.Models
         [XmlElement("CourierDistanceMultiplier")]
         public float CourierDistanceMultiplier { get; set; } = 0.5f;
         
+        [XmlElement("CourierTravelSpeedMultiplier")]
+        public float CourierTravelSpeedMultiplier { get; set; } = 1.0f;
+        
         [XmlElement("CourierRiskFactor")]
         public float CourierRiskFactor { get; set; } = 0.1f;
         
@@ -119,6 +122,7 @@ namespace TradingExpanded.Models
             MaxCouriers = 5;
             CourierBaseCost = 100;
             CourierDistanceMultiplier = 0.5f;
+            CourierTravelSpeedMultiplier = 200.0f;
             CourierRiskFactor = 0.1f;
             
             MaxAgreementsPerMerchant = 3;

@@ -33,7 +33,7 @@ namespace TradingExpanded.Repositories
         public IEnumerable<Courier> GetActiveCouriers()
         {
             return _entities.Values
-                .Where(courier => !courier.HasReturnedInfo)
+                .Where(courier => !courier.IsDelivered)
                 .ToList();
         }
         
@@ -43,7 +43,7 @@ namespace TradingExpanded.Repositories
         public IEnumerable<Courier> GetCompletedCouriers()
         {
             return _entities.Values
-                .Where(courier => courier.HasReturnedInfo)
+                .Where(courier => courier.IsDelivered)
                 .ToList();
         }
     }

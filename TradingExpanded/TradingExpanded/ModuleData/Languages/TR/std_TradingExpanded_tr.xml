@@ -20,5 +20,35 @@
     <string id="WholesaleShopNoShop" text="Bu şehirde henüz bir dükkanınız yok."/>
     <string id="WholesaleShopAlreadyExists" text="Bu şehirde zaten bir dükkanınız var."/>
     <string id="WholesaleShopNotEnoughGold" text="Yeni bir dükkan kurmak için 5000 dinara ihtiyacınız var."/>
+    
+    <!-- Ulak Sistemi -->
+    <string id="CourierSendOption" text="Ulak Gönder" />
+    <string id="CourierSendDesc" text="Diğer şehirlerdeki ticaret malı fiyatlarını öğrenmek için ulak gönderin." />
+    <string id="CourierSendTitle" text="Ulak Gönder" />
+    <string id="CourierSendConfirm" text="Gönder" />
+    <string id="CourierSendCancel" text="İptal" />
+    <string id="CourierDestinationOption" text="{TOWN_NAME} - {DISTANCE}km ({COST} Dinar)" />
+    <string id="CourierDestinationDesc" text="{TOWN_NAME} şehrine ulak göndermek {COST} Dinar. Bu şehirdeki ticaret malı fiyatlarını öğrenebilirsiniz." />
+    <string id="CourierConfirmTitle" text="Ulak Gönder" />
+    <string id="CourierConfirmQuestion" text="{DESTINATION_TOWN} şehrine {COST} Dinar karşılığında ulak göndermek istiyor musunuz?" />
+    <string id="CourierConfirmYes" text="Evet, Gönder" />
+    <string id="CourierConfirmNo" text="Hayır, Vazgeç" />
+    <string id="CourierLimitReached" text="Maksimum ulak sayısına ({MAX_COURIERS}) ulaştınız. Yeni ulak göndermek için mevcut ulaklardan birinin görevini tamamlaması gerekiyor." />
+    <string id="CourierNotEnoughGold" text="Ulak göndermek için yeterli altınınız yok. {COST} Dinar gerekiyor." />
+    <string id="CourierSentSuccess" text="{DESTINATION_TOWN} şehrine ulaşması yaklaşık {DAYS} gün sürecek bir ulak gönderildi." />
+    <string id="CourierSendFailed" text="Ulak gönderme işlemi başarısız oldu. Paranız iade edildi." />
+    <string id="CourierReturnedMessage" text="{DESTINATION_TOWN} şehrine gönderdiğiniz ulak görevini tamamladı ve bilgileri getirdi." />
+    <string id="CourierLostMessage" text="{DESTINATION_TOWN} şehrine gönderdiğiniz ulak kayboldu. Bilgiler alınamadı." />
+    <string id="CourierPriceCollectedMessage" text="{TOWN_NAME} şehrine ait fiyat bilgileri kaydedildi. Toplam {COUNT} ticaret malı fiyatı güncellendi." />
+    
+    <!-- Fiyat Karşılaştırma Sistemi -->
+    <string id="ProfitableItemsFound" text="Kârlı ticaret fırsatları bulundu:" />
+    <string id="ProfitableSellItem" text="{ITEM_NAME}: Burada {LOCAL_PRICE}{GOLD_ICON}, {TOWN_NAME}'da {REMOTE_PRICE}{GOLD_ICON} → Kâr: {PROFIT}{GOLD_ICON}" />
+    <string id="ProfitableBuyItem" text="{ITEM_NAME}: {TOWN_NAME}'da {REMOTE_PRICE}{GOLD_ICON}, burada {LOCAL_PRICE}{GOLD_ICON} → Kâr: {PROFIT}{GOLD_ICON}" />
+    <string id="MoreProfitableItems" text="...ve {COUNT} ticaret fırsatı daha." />
+    
+    <!-- Yeni çeviri metinleri ekle - CourierPartyName ve CourierPartyCreated -->
+    <string id="CourierPartyName" text="{ORIGIN} Ulağı" />
+    <string id="CourierPartyCreated" text="{ORIGIN} şehrinden {DESTINATION} şehrine gidecek ulak yola çıktı." />
   </strings>
 </base> 

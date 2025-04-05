@@ -719,6 +719,55 @@ namespace TradingExpanded.Models
         }
         
         #endregion
+
+        #region Sermaye Yönetimi
+
+        /// <summary>
+        /// Dükkana sermaye ekler
+        /// </summary>
+        /// <param name="amount">Eklenecek sermaye miktarı</param>
+        /// <returns>İşlem başarılı olursa true</returns>
+        public bool AddCapital(int amount)
+        {
+            if (amount <= 0)
+                return false;
+                
+            Capital += amount;
+            return true;
+        }
+
+        /// <summary>
+        /// Dükkandan sermaye çeker
+        /// </summary>
+        /// <param name="amount">Çekilecek sermaye miktarı</param>
+        /// <returns>İşlem başarılı olursa true</returns>
+        public bool WithdrawCapital(int amount)
+        {
+            if (amount <= 0 || amount > Capital)
+                return false;
+                
+            Capital -= amount;
+            return true;
+        }
+
+        /// <summary>
+        /// Dükkanın mevcut durumunu metin olarak döndürür
+        /// </summary>
+        public string GetStatusText()
+        {
+            string status = $"{Town.Name} Toptan Satış Dükkanı\n" +
+                            $"Sermaye: {Capital} Dinar\n" +
+                            $"Günlük Kâr: {DailyProfit} Dinar\n" +
+                            $"Günlük Gider: {DailyExpenses} Dinar\n" +
+                            $"Net Günlük Kâr: {DailyNetProfit} Dinar\n" +
+                            $"Toplam Kâr: {TotalProfit} Dinar\n" +
+                            $"Kuruluş Tarihi: {EstablishmentDate.ToDays} gün önce\n" +
+                            $"Faaliyet Süresi: {DaysSinceEstablishment} gün";
+                            
+            return status;
+        }
+
+        #endregion
     }
     
     /// <summary>

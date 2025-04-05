@@ -280,20 +280,20 @@ namespace TradingExpanded.Behaviors
                 LogManager.Instance.WriteInfo("TradingExpanded: Oyun yüklendi");
                 
                 // Dictionary koleksiyonları oluştur
-                if (_wholesaleShops == null)
-                    _wholesaleShops = new Dictionary<string, WholesaleShop>();
+            if (_wholesaleShops == null)
+                _wholesaleShops = new Dictionary<string, WholesaleShop>();
                 
-                if (_caravans == null)
-                    _caravans = new Dictionary<string, TradeCaravan>();
+            if (_caravans == null)
+                _caravans = new Dictionary<string, TradeCaravan>();
                 
-                if (_couriers == null)
-                    _couriers = new Dictionary<string, Courier>();
+            if (_couriers == null)
+                _couriers = new Dictionary<string, Courier>();
                 
-                if (_merchantRelations == null)
-                    _merchantRelations = new Dictionary<string, MerchantRelation>();
+            if (_merchantRelations == null)
+                _merchantRelations = new Dictionary<string, MerchantRelation>();
                 
-                if (_inventoryTracker == null)
-                    _inventoryTracker = new InventoryTracker();
+            if (_inventoryTracker == null)
+                _inventoryTracker = new InventoryTracker();
                 
                 // PriceHistory null kontrolü
                 if (_inventoryTracker.PriceHistory == null)
@@ -314,23 +314,23 @@ namespace TradingExpanded.Behaviors
         private void OnDailyTick()
         {
             try
-            {
-                // Update all objects daily
-                UpdateWholesaleShops();
-                UpdateCaravans();
-                UpdateCouriers();
-                UpdateMerchantRelations();
-                
-                // Update analytics less frequently (every 3 days)
-                if ((int)CampaignTime.Now.ToDays % 3 == 0)
+        {
+            // Update all objects daily
+            UpdateWholesaleShops();
+            UpdateCaravans();
+            UpdateCouriers();
+            UpdateMerchantRelations();
+            
+            // Update analytics less frequently (every 3 days)
+            if ((int)CampaignTime.Now.ToDays % 3 == 0)
                 {
                     if (_inventoryTrackerService != null)
                     {
                         _inventoryTrackerService.Update();
                     }
                     else
-                    {
-                        _inventoryTracker.Update();
+            {
+                _inventoryTracker.Update();
                     }
                 }
             }
@@ -348,18 +348,18 @@ namespace TradingExpanded.Behaviors
         private void OnSettlementEntered(MobileParty mobileParty, Settlement settlement, Hero hero)
         {
             try
+        {
+            // Handle player entering a settlement
+            if (mobileParty == MobileParty.MainParty && settlement.IsTown)
             {
-                // Handle player entering a settlement
-                if (mobileParty == MobileParty.MainParty && settlement.IsTown)
-                {
-                    // Record current prices for analytics
+                // Record current prices for analytics
                     if (_inventoryTrackerService != null)
                     {
                         _inventoryTrackerService.RecordCurrentPrices(settlement.Town);
                     }
                     else
                     {
-                        RecordCurrentPrices(settlement.Town);
+                RecordCurrentPrices(settlement.Town);
                     }
                 }
             }
@@ -575,65 +575,359 @@ namespace TradingExpanded.Behaviors
         public List<Courier> GetPlayerCouriers()
         {
             return _couriers.Values
-                .Where(courier => courier.State != Courier.CourierState.Delivered && 
-                                 courier.State != Courier.CourierState.Lost)
+                .Where(courier => !courier.IsDelivered)
                 .ToList();
         }
         
         /// <summary>
-        /// Creates and dispatches a new courier to gather price information
+        /// Kurye sisteminin hazır olup olmadığını kontrol eder
         /// </summary>
-        public Courier DispatchCourier(Town originTown, Town destinationTown, int skill = 50)
+        public bool IsCourierSystemReady()
         {
-            if (originTown == null || destinationTown == null || originTown == destinationTown)
-                return null;
-                
-            // Check if we've reached the maximum number of couriers
-            int maxCouriers = Settings.Instance?.MaxCouriers ?? 5;
-            if (GetPlayerCouriers().Count >= maxCouriers)
-                return null;
-                
-            // Create the courier
-            var courier = new Courier(originTown, destinationTown, skill);
-            _couriers[courier.Id] = courier;
-            
-            // Start the journey
-            courier.StartJourney();
-            
-            return courier;
+            // Kurye sistemi her zaman hazır
+            return true;
         }
         
         /// <summary>
-        /// Updates all couriers
+        /// Şu an aktif olan kurye sayısını döndürür
         /// </summary>
-        private void UpdateCouriers()
+        public int GetActiveCourierCount()
         {
-            foreach (var courier in _couriers.Values)
+            try
             {
-                courier.UpdateCourier();
+                // Repository kullanılıyorsa
+                if (_courierRepository != null)
+                {
+                    return _courierRepository.GetAll().Count(c => !c.IsDelivered);
+                }
+                
+                // Eski koleksiyon kullanılıyorsa
+                return _couriers.Values.Count(c => !c.IsDelivered);
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("Aktif kurye sayısı alınırken hata", ex);
+                return 0;
             }
         }
         
         /// <summary>
-        /// Gets price information gathered by couriers
+        /// Yeni bir kurye oluşturur ve gönderir
         /// </summary>
-        public Dictionary<ItemObject, int> GetCourierPriceInfo(Town town)
+        /// <param name="originTown">Başlangıç şehri</param>
+        /// <param name="destinationTown">Hedef şehri</param>
+        /// <param name="cost">Kurye maliyeti</param>
+        /// <returns>İşlem başarılı olursa true, aksi halde false</returns>
+        public bool CreateAndSendCourier(Town originTown, Town destinationTown, int cost)
         {
-            if (town == null)
-                return new Dictionary<ItemObject, int>();
+            try
+            {
+                if (originTown == null || destinationTown == null)
+                {
+                    LogManager.Instance.WriteError("Kurye oluşturma: Başlangıç veya hedef şehir null.");
+                    return false;
+                }
                 
-            // Find the most recent courier info for this town
-            var courier = _couriers.Values
-                .Where(c => c.DestinationTown == town && 
-                           c.HasReturnedInfo &&
-                           c.State == Courier.CourierState.Delivered)
-                .OrderByDescending(c => c.DepartureTime)
-                .FirstOrDefault();
+                LogManager.Instance.WriteDebug($"Kurye gönderilecek: {originTown.Name} -> {destinationTown.Name}, maliyet: {cost}");
                 
-            if (courier == null)
-                return new Dictionary<ItemObject, int>();
+                // Varış zamanını hesapla
+                CampaignTime arrivalTime = CalculateCourierArrivalTime(originTown, destinationTown);
                 
-            return courier.PriceInfo;
+                // Kargo oluştur (sadece göstermelik)
+                CargoItem cargo = CargoItem.CreateMoneyCargo(0);
+                
+                // Kurye oluştur - yeni constructor'ı kullan
+                Courier courier = new Courier(originTown.Settlement, destinationTown.Settlement, cargo, cost, arrivalTime);
+                
+                // Kurye partisini oluştur
+                courier.CreatePartyOnMap();
+                
+                // Repository güncelle
+                if (_courierRepository != null)
+                {
+                    _courierRepository.AddOrUpdate(courier);
+                }
+                else
+                {
+                    // Eski koleksiyona ekle
+                    _couriers[courier.Id] = courier;
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("Kurye oluşturma ve gönderme sırasında hata", ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// İki şehir arasındaki kurye seyahat süresini hesaplar
+        /// </summary>
+        public CampaignTime CalculateCourierArrivalTime(Town originTown, Town destinationTown)
+        {
+            try
+            {
+                if (originTown == null || destinationTown == null)
+                    return CampaignTime.DaysFromNow(3); // Varsayılan
+                
+                // Mesafeyi hesapla
+                float distance = Campaign.Current.Models.MapDistanceModel.GetDistance(originTown.Settlement, destinationTown.Settlement);
+                
+                // Hız çarpanı ayarlardan al
+                float speedMultiplier = Settings.Instance?.CourierTravelSpeedMultiplier ?? 1.0f;
+                
+                // 100 birim mesafeyi geçmek için yaklaşık 1 gün (24 saat) 
+                // ve varış için ekstra 12 saat veri toplama süresi
+                float travelHours = (distance / 100f) * 24f / speedMultiplier;
+                float gatheringHours = 12f;
+                float totalHours = travelHours + gatheringHours + travelHours; // Gidiş + Veri Toplama + Dönüş
+                
+                // Risk faktörü ile ekstra zaman
+                float riskFactor = Settings.Instance?.CourierRiskFactor ?? 0.1f;
+                totalHours += totalHours * riskFactor; // Risk için ekstra süre
+                
+                return CampaignTime.HoursFromNow((int)totalHours);
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("Kurye varış zamanı hesaplanırken hata", ex);
+                return CampaignTime.DaysFromNow(3); // Hata durumunda varsayılan
+            }
+        }
+        
+        /// <summary>
+        /// Kuryeleri günceller
+        /// </summary>
+        private void UpdateCouriers()
+        {
+            try
+            {
+                List<Courier> couriers;
+                
+                // Repository kullanılıyorsa
+                if (_courierRepository != null)
+                {
+                    couriers = _courierRepository.GetAll().ToList();
+                }
+                else
+                {
+                    // Eski koleksiyon
+                    couriers = _couriers.Values.ToList();
+                }
+                
+                foreach (var courier in couriers)
+                {
+                    // Sadece aktif kuryeleri güncelle
+                    if (!courier.IsDelivered)
+                    {
+                        // Kurye varış durumunu kontrol et
+                        bool hasArrived = courier.CheckArrival();
+                        
+                        // Eğer kurye yeni varmışsa
+                        if (hasArrived && courier.IsDelivered)
+                        {
+                            // Risk faktörü hesapla - bir şansla kurye kaybolabilir
+                            float riskFactor = Settings.Instance?.CourierRiskFactor ?? 0.1f;
+                            float randomValue = MBRandom.RandomFloat;
+                            
+                            // Kurye kayboldu mu?
+                            if (randomValue < riskFactor)
+                            {
+                                LogManager.Instance.WriteDebug($"Kurye kayboldu: {courier.Origin.Name} -> {courier.Destination.Name}");
+                                
+                                // Kayıp bildirimi
+                                InformationManager.DisplayMessage(new InformationMessage(
+                                    new TextObject("{=CourierLostMessage}{DESTINATION_TOWN} şehrine gönderdiğiniz ulak kayboldu. Bilgiler alınamadı.")
+                                        .SetTextVariable("DESTINATION_TOWN", courier.Destination.Name)
+                                        .ToString(),
+                                    Colors.Red));
+                            }
+                            else
+                            {
+                                // Varış bildirimi
+                                InformationManager.DisplayMessage(new InformationMessage(
+                                    new TextObject("{=CourierReturnedMessage}{DESTINATION_TOWN} şehrine gönderdiğiniz ulak görevini tamamladı ve bilgileri getirdi.")
+                                        .SetTextVariable("DESTINATION_TOWN", courier.Destination.Name)
+                                        .ToString(),
+                                    Colors.Green));
+                                
+                                // Bilgileri kaydet
+                                CollectPriceData(courier);
+                            }
+                            
+                            // Repository güncelle
+                            if (_courierRepository != null)
+                            {
+                                _courierRepository.AddOrUpdate(courier);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("Kuryeler güncellenirken hata", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Kurye tarafından toplanan fiyat verilerini işler
+        /// </summary>
+        private void CollectPriceData(Courier courier)
+        {
+            try
+            {
+                if (courier == null || courier.Destination == null)
+                    return;
+                    
+                LogManager.Instance.WriteDebug($"Kurye fiyat verisi topluyor: {courier.Destination.Name}");
+                
+                // Hedef şehire ait Town nesnesini bul
+                Town town = null;
+                if (courier.Destination.IsTown)
+                {
+                    town = courier.Destination.Town;
+                }
+                
+                if (town == null)
+                {
+                    LogManager.Instance.WriteError("Hedef yerleşim geçerli bir şehir değil.");
+                    return;
+                }
+                
+                // Kuryenin topladığı bilgileri tutacak dictionary
+                var priceInfo = new Dictionary<ItemObject, int>();
+                
+                // Sadece ticaret mallarını ele al
+                foreach (var item in MBObjectManager.Instance.GetObjectTypeList<ItemObject>())
+                {
+                    if (item.IsTradeGood)
+                    {
+                        // Şehirdeki şu anki fiyatı al
+                        int price = town.GetItemPrice(item);
+                        if (price > 0)
+                        {
+                            // Fiyatı kaydet
+                            priceInfo[item] = price;
+                            
+                            // InventoryTracker'a da kaydet
+                            _inventoryTracker.RecordPriceHistory(item, town, price);
+                            
+                            // Repository kullanılıyorsa servis üzerinden kaydet
+                            if (_inventoryTrackerService != null)
+                            {
+                                _inventoryTrackerService.RecordCurrentPrices(town);
+                            }
+                        }
+                    }
+                }
+                
+                // Artık Courier sınıfında PriceInfo yok, sadece bildirim yapalım
+                if (courier.IsDelivered && courier.Cargo != null)
+                {
+                    // Fiyat bilgilerini toplama işlemi tamamlandı bildirimi
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TextObject("{=CourierPriceCollectedMessage}{TOWN_NAME} şehrine ait fiyat bilgileri kaydedildi. Toplam {COUNT} ticaret malı fiyatı güncellendi.")
+                            .SetTextVariable("TOWN_NAME", town.Name)
+                            .SetTextVariable("COUNT", priceInfo.Count)
+                            .ToString(),
+                        Colors.Green));
+                    
+                    // İlginç fiyat farkları varsa bildir
+                    FindAndReportInterestingPrices(town, priceInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("Fiyat verileri toplanırken hata", ex);
+            }
+        }
+        
+        /// <summary>
+        /// İlginç fiyat farklarını bulur ve rapor eder
+        /// </summary>
+        private void FindAndReportInterestingPrices(Town town, Dictionary<ItemObject, int> priceInfo)
+        {
+            try
+            {
+                // Bulunduğumuz şehir
+                Town currentTown = Settlement.CurrentSettlement?.Town;
+                if (currentTown == null || priceInfo == null || priceInfo.Count == 0)
+                    return;
+                    
+                // Kârlı olabilecek alım/satım fırsatlarını bul
+                List<string> profitableItems = new List<string>();
+                
+                foreach (var itemPrice in priceInfo)
+                {
+                    ItemObject item = itemPrice.Key;
+                    int remotePrice = itemPrice.Value;
+                    int localPrice = currentTown.GetItemPrice(item);
+                    
+                    // Fiyat farkı yüzde 20'den fazla mı?
+                    if (localPrice > 0 && remotePrice > 0)
+                    {
+                        float priceDiff = Math.Abs(localPrice - remotePrice) / (float)Math.Min(localPrice, remotePrice);
+                        
+                        if (priceDiff >= 0.2f) // %20 veya daha fazla fark
+                        {
+                            if (localPrice < remotePrice) // Yerel fiyat daha ucuz, satmak kârlı
+                            {
+                                int profit = remotePrice - localPrice;
+                                profitableItems.Add(new TextObject("{=ProfitableSellItem}{ITEM_NAME}: Burada {LOCAL_PRICE}{GOLD_ICON}, {TOWN_NAME}'da {REMOTE_PRICE}{GOLD_ICON} → Kâr: {PROFIT}{GOLD_ICON}")
+                                    .SetTextVariable("ITEM_NAME", item.Name)
+                                    .SetTextVariable("LOCAL_PRICE", localPrice)
+                                    .SetTextVariable("REMOTE_PRICE", remotePrice)
+                                    .SetTextVariable("TOWN_NAME", town.Name)
+                                    .SetTextVariable("PROFIT", profit)
+                                    .ToString());
+                            }
+                            else // Uzak şehirde daha ucuz, oradan alıp burada satmak kârlı
+                            {
+                                int profit = localPrice - remotePrice;
+                                profitableItems.Add(new TextObject("{=ProfitableBuyItem}{ITEM_NAME}: {TOWN_NAME}'da {REMOTE_PRICE}{GOLD_ICON}, burada {LOCAL_PRICE}{GOLD_ICON} → Kâr: {PROFIT}{GOLD_ICON}")
+                                    .SetTextVariable("ITEM_NAME", item.Name)
+                                    .SetTextVariable("LOCAL_PRICE", localPrice)
+                                    .SetTextVariable("REMOTE_PRICE", remotePrice)
+                                    .SetTextVariable("TOWN_NAME", town.Name)
+                                    .SetTextVariable("PROFIT", profit)
+                                    .ToString());
+                            }
+                        }
+                    }
+                }
+                
+                // Kârlı fırsatları rapor et
+                if (profitableItems.Count > 0)
+                {
+                    // En fazla 5 tane göster
+                    int count = Math.Min(profitableItems.Count, 5);
+                    
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TextObject("{=ProfitableItemsFound}Kârlı ticaret fırsatları bulundu:").ToString(),
+                        Colors.Green));
+                        
+                    for (int i = 0; i < count; i++)
+                    {
+                        InformationManager.DisplayMessage(new InformationMessage(profitableItems[i], Colors.Green));
+                    }
+                    
+                    if (profitableItems.Count > count)
+                    {
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            new TextObject("{=MoreProfitableItems}...ve {COUNT} ticaret fırsatı daha.")
+                                .SetTextVariable("COUNT", profitableItems.Count - count)
+                                .ToString(),
+                            Colors.Green));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.Instance.WriteError("İlginç fiyatlar raporlanırken hata", ex);
+            }
         }
         
         #endregion
@@ -721,13 +1015,13 @@ namespace TradingExpanded.Behaviors
         {
             if (town == null)
                 return;
-
+                
             foreach (var item in MBObjectManager.Instance.GetObjectTypeList<ItemObject>())
             {
                 if (item.IsTradeGood)
                 {
                     // Şu anki fiyatı al
-                    int price = town.GetItemPrice(item);
+                int price = town.GetItemPrice(item);
                     if (price > 0)
                     {
                         // Record price history
